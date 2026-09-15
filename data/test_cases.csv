@@ -1,0 +1,21 @@
+test_id,module,description,priority,duration,tags,historical_failure_count
+TC001,Authentication,Verify login with valid credentials,High,5,"authentication,login,success",4
+TC002,Authentication,Verify login with invalid password,High,6,"authentication,login,failure",7
+TC003,Authentication,Verify account lockout after failed attempts,High,8,"authentication,lockout,security",9
+TC004,Authentication,Verify password reset using registered email,Medium,10,"authentication,password-reset,email",3
+TC005,User Profile,Verify user profile update,Medium,7,"profile,user-update",2
+TC006,Cart,Verify adding product to cart,Medium,5,"cart,add-product",4
+TC007,Cart,Verify removing product from cart,Low,4,"cart,remove-product",1
+TC008,Cart,Verify cart quantity update,Medium,6,"cart,quantity",3
+TC009,Orders,Verify successful order creation,High,10,"orders,creation,success",8
+TC010,Orders,Verify order creation failure,High,8,"orders,creation,failure",6
+TC011,Orders,Verify order cancellation,High,12,"orders,cancellation",7
+TC012,Orders,Verify order history display,Medium,7,"orders,history",2
+TC013,Payment,Verify successful UPI payment,High,8,"payment,upi,success",10
+TC014,Payment,Verify failed UPI payment,High,7,"payment,upi,failure",12
+TC015,Payment,Verify UPI payment timeout handling,High,15,"payment,upi,timeout",9
+TC016,Payment,Verify card payment processing,High,10,"payment,card",5
+TC017,Payment,Verify payment refund processing,High,14,"payment,refund",11
+TC018,Notifications,Verify order confirmation notification,Medium,5,"notifications,order-confirmation",3
+TC019,Notifications,Verify payment failure notification,Medium,6,"notifications,payment-failure",4
+TC020,Search,Verify product search results,Low,9,"search,product",2
