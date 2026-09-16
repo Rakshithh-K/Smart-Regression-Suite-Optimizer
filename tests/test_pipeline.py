@@ -28,11 +28,18 @@ def test_pipeline_returns_selected_tests():
         "TC020": 35,
     }
 
-    result = run_pipeline(
+    result, coverage= run_pipeline(
     "data/test_cases.csv",
     "payment UPI failure",
     time_budget=30,
 )
+    assert isinstance(coverage, dict)
+
+    assert coverage["total_selected_tests"] == len(result)
+
+    assert "module_coverage" in coverage
+
+    assert "tag_coverage" in coverage
 
     assert isinstance(result, pd.DataFrame)
 

@@ -4,13 +4,14 @@ from src.data_loader import load_test_cases
 from src.ai_matcher import calculate_relevance_scores
 from src.prioritizer import prioritize_tests
 from src.optimizer import optimize_regression_suite
+from src.coverage_analyzer import analyze_coverage
 
 
 def run_pipeline(
     csv_path: str,
     change_description: str,
     time_budget: int,
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, dict]:
     """
     Run the complete regression optimization pipeline.
     """
@@ -36,4 +37,7 @@ def run_pipeline(
         time_budget,
     )
 
-    return selected_tests
+    # 5. Analyze coverage of selected tests
+    coverage = analyze_coverage(selected_tests)
+
+    return selected_tests, coverage
