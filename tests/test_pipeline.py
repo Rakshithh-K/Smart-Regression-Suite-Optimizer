@@ -28,11 +28,17 @@ def test_pipeline_returns_selected_tests():
         "TC020": 35,
     }
 
-    result, coverage= run_pipeline(
+    result, coverage, recommendation= run_pipeline(
     "data/test_cases.csv",
     "payment UPI failure",
     time_budget=30,
 )
+    assert isinstance(recommendation, dict)
+
+    assert recommendation["total_selected_tests"] == len(result)
+
+    assert recommendation["time_budget"] == 30
+    
     assert isinstance(coverage, dict)
 
     assert coverage["total_selected_tests"] == len(result)
