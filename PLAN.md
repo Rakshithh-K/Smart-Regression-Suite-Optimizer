@@ -355,3 +355,17 @@ Edge cases will include:
 - Demonstrate coverage gaps.
 - Demonstrate high-risk exclusions.
 - Demonstrate prioritization trade-offs.
+## Prioritization Strategy
+
+Each test case receives a deterministic priority score based on:
+
+- AI relevance score: 50%
+- Business priority: 30%
+- Historical failure signal: 20%
+
+The AI only performs change-description matching against test-case
+descriptions and tags. It does not select the final regression suite.
+
+The prioritization engine converts these inputs into a score.
+The optimization engine then selects the highest-value combination
+within the available execution-time budget.
