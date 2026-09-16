@@ -29,10 +29,10 @@ def test_pipeline_returns_selected_tests():
     }
 
     result = run_pipeline(
-        "data/test_cases.csv",
-        relevance_scores,
-        time_budget=30,
-    )
+    "data/test_cases.csv",
+    "payment UPI failure",
+    time_budget=30,
+)
 
     assert isinstance(result, pd.DataFrame)
 
