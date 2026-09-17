@@ -34,6 +34,7 @@ def test_analyze_exclusions():
     result = analyze_exclusions(
         all_tests,
         selected_tests,
+        
     )
 
     assert len(result) == 1

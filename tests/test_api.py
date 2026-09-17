@@ -44,10 +44,15 @@ def test_optimize():
     data = response.json()
 
     assert "selected_tests" in data
+    assert "excluded_high_risk_tests" in data
     assert "coverage" in data
     assert "recommendation" in data
 
     assert len(data["selected_tests"]) > 0
+    assert isinstance(
+        data["excluded_high_risk_tests"],
+        list,
+    )
 
 
 def test_optimize_without_file():
