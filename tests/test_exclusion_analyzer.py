@@ -12,6 +12,7 @@ def test_analyze_exclusions():
             "priority": "High",
             "duration": 10,
             "historical_failure_count": 8,
+            "relevance_score": 80,
         },
         {
             "test_id": "TC002",
@@ -19,6 +20,7 @@ def test_analyze_exclusions():
             "priority": "High",
             "duration": 15,
             "historical_failure_count": 10,
+            "relevance_score": 70,
         },
         {
             "test_id": "TC003",
@@ -26,6 +28,7 @@ def test_analyze_exclusions():
             "priority": "Low",
             "duration": 5,
             "historical_failure_count": 2,
+            "relevance_score": 90,
         },
     ])
 
@@ -34,9 +37,12 @@ def test_analyze_exclusions():
     result = analyze_exclusions(
         all_tests,
         selected_tests,
-        
     )
 
     assert len(result) == 1
+
     assert result[0]["test_id"] == "TC002"
+
     assert result[0]["priority"] == "High"
+
+    assert result[0]["relevance_score"] == 70

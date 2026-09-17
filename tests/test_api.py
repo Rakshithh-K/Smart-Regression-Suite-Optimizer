@@ -47,6 +47,11 @@ def test_optimize():
     assert "excluded_high_risk_tests" in data
     assert "coverage" in data
     assert "recommendation" in data
+    assert "ai_explanations" in data
+
+    assert "selected_reasons" in data["ai_explanations"]
+    assert "excluded_reasons" in data["ai_explanations"]
+    assert "overall_tradeoff" in data["ai_explanations"]
 
     assert len(data["selected_tests"]) > 0
     assert isinstance(

@@ -7,16 +7,14 @@ from src.optimizer import optimize_regression_suite
 from src.coverage_analyzer import analyze_coverage
 from src.recommender import generate_recommendation
 from src.exclusion_analyzer import analyze_exclusions
+from src.ai_explainer import generate_ai_explanations
 
 
 def run_pipeline(
     csv_path: str,
     change_description: str,
     time_budget: int,
-) -> tuple[pd.DataFrame, list[dict], dict, dict]:
-    """
-    Run the complete regression optimization pipeline.
-    """
+) -> tuple[pd.DataFrame, list[dict], dict, dict, dict]:
 
     df = load_test_cases(csv_path)
 
@@ -41,7 +39,7 @@ def run_pipeline(
     )
 
     coverage = analyze_coverage(
-        selected_tests
+        selected_tests,
     )
 
     recommendation = generate_recommendation(
@@ -50,9 +48,17 @@ def run_pipeline(
         time_budget,
     )
 
+    ai_explanations = generate_ai_explanations(
+        selected_tests,
+        exclusions,
+        change_description,
+        time_budget,
+    )
+
     return (
         selected_tests,
         exclusions,
         coverage,
         recommendation,
+        ai_explanations,
     )

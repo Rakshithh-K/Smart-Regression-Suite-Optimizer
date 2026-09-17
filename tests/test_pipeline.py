@@ -5,13 +5,20 @@ from src.pipeline import run_pipeline
 
 def test_pipeline_returns_selected_tests():
 
-    result, exclusions, coverage, recommendation = run_pipeline(
+    result, exclusions, coverage, recommendation, ai_explanations= run_pipeline(
         "data/test_cases.csv",
         "payment UPI failure",
         time_budget=30,
     )
 
     assert isinstance(recommendation, dict)
+    assert isinstance(ai_explanations, dict)
+
+    assert "selected_reasons" in ai_explanations
+
+    assert "excluded_reasons" in ai_explanations
+
+    assert "overall_tradeoff" in ai_explanations
 
     assert isinstance(exclusions, list)
 

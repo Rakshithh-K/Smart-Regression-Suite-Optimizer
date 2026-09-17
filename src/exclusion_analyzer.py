@@ -1,6 +1,9 @@
 import pandas as pd
 
 
+RELEVANCE_THRESHOLD = 50
+
+
 def analyze_exclusions(
     all_tests: pd.DataFrame,
     selected_tests: pd.DataFrame,
@@ -17,19 +20,16 @@ def analyze_exclusions(
     ]
 
     high_risk_tests = excluded_tests[
-        excluded_tests["priority"] == "High"
+        (excluded_tests["priority"] == "High")
+        & (
+            excluded_tests["relevance_score"]
+            >= RELEVANCE_THRESHOLD
+        )
     ]
 
     results = []
 
     for _, row in high_risk_tests.iterrows():
-
-        reason = (
-            f"Excluded due to time-budget trade-off. "
-            f"This High-priority test takes "
-            f"{row['duration']} minutes and has "
-            f"{row['historical_failure_count']} historical failures."
-        )
 
         results.append({
             "test_id": row["test_id"],
@@ -39,7 +39,9 @@ def analyze_exclusions(
             "historical_failure_count": int(
                 row["historical_failure_count"]
             ),
-            "reason": reason,
+            "relevance_score": float(
+                row["relevance_score"]
+            ),
         })
 
-    return results  
+    return results
