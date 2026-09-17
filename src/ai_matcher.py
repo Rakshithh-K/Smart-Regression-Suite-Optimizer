@@ -1,46 +1,84 @@
-import os
 import json
 
 import pandas as pd
-from dotenv import load_dotenv
-from openai import OpenAI
+
+from src.ai_provider import get_ai_provider
 
 
-load_dotenv()
+def calculate_mock_relevance_scores(
+    df: pd.DataFrame,
+    change_description: str,
+) -> dict[str, float]:
+    """
+    Generate deterministic relevance scores locally.
+
+    This is used when AI_PROVIDER=mock.
+    """
+
+    change_words = set(
+        change_description.lower().replace(",", " ").split()
+    )
+
+    scores = {}
+
+    for _, row in df.iterrows():
+        text = " ".join(
+            [
+                str(row["module"]),
+                str(row["description"]),
+                str(row["tags"]),
+            ]
+        ).lower()
+
+        matches = sum(
+            1
+            for word in change_words
+            if word in text
+        )
+
+        if matches >= 3:
+            score = 100
+        elif matches == 2:
+            score = 75
+        elif matches == 1:
+            score = 50
+        else:
+            score = 0
+
+        scores[row["test_id"]] = float(score)
+
+    return scores
 
 
 def calculate_relevance_scores(
     df: pd.DataFrame,
     change_description: str,
 ) -> dict[str, float]:
-    """
-    Use AI to calculate how relevant each test case
-    is to the described software change.
-    """
 
     if not change_description.strip():
         raise ValueError(
             "Change description cannot be empty."
         )
 
-    api_key = os.getenv("OPENAI_API_KEY")
+    provider = get_ai_provider()
 
-    if not api_key:
-        raise ValueError(
-            "OPENAI_API_KEY is not configured."
+    if provider == "mock":
+        return calculate_mock_relevance_scores(
+            df,
+            change_description,
         )
-
-    client = OpenAI(api_key=api_key)
 
     test_cases = []
 
     for _, row in df.iterrows():
-        test_cases.append({
-            "test_id": row["test_id"],
-            "module": row["module"],
-            "description": row["description"],
-            "tags": row["tags"],
-        })
+        test_cases.append(
+            {
+                "test_id": row["test_id"],
+                "module": row["module"],
+                "description": row["description"],
+                "tags": row["tags"],
+            }
+        )
 
     prompt = f"""
 You are a software testing assistant.
@@ -73,7 +111,7 @@ Rules:
 - Do not include explanations.
 """
 
-    response = client.responses.create(
+    response = provider.responses.create(
         model="gpt-5.6-luna",
         input=prompt,
     )

@@ -43,13 +43,14 @@ async def optimize(
 
     try:
 
-        selected_tests, exclusions, coverage, recommendation, ai_explanations = run_pipeline(
+        selected_tests, exclusions,summary, coverage, recommendation, ai_explanations = run_pipeline(
             temp_path,
             change_description,
             time_budget,
         )
 
         return {
+            "summary": summary,
             "selected_tests": selected_tests.to_dict(
                 orient="records"
             ),

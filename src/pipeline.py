@@ -14,9 +14,18 @@ def run_pipeline(
     csv_path: str,
     change_description: str,
     time_budget: int,
-) -> tuple[pd.DataFrame, list[dict], dict, dict, dict]:
+) -> tuple[
+    pd.DataFrame,
+    list[dict],
+    dict,
+    dict,
+    dict,
+    dict,
+]:
 
     df = load_test_cases(csv_path)
+
+    total_tests = len(df)
 
     relevance_scores = calculate_relevance_scores(
         df,
@@ -38,6 +47,17 @@ def run_pipeline(
         selected_tests,
     )
 
+    summary = {
+        "total_tests": total_tests,
+        "selected_count": len(selected_tests),
+        "excluded_high_risk_count": len(exclusions),
+        "other_excluded_count": (
+            total_tests
+            - len(selected_tests)
+            - len(exclusions)
+        ),
+    }
+
     coverage = analyze_coverage(
         selected_tests,
     )
@@ -58,6 +78,7 @@ def run_pipeline(
     return (
         selected_tests,
         exclusions,
+        summary,
         coverage,
         recommendation,
         ai_explanations,

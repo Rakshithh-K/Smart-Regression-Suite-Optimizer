@@ -52,6 +52,14 @@ def test_optimize():
     assert "selected_reasons" in data["ai_explanations"]
     assert "excluded_reasons" in data["ai_explanations"]
     assert "overall_tradeoff" in data["ai_explanations"]
+    assert "summary" in data
+
+    assert data["summary"]["total_tests"] == 20
+
+    assert (
+        data["summary"]["selected_count"]
+        == len(data["selected_tests"])
+        )
 
     assert len(data["selected_tests"]) > 0
     assert isinstance(
