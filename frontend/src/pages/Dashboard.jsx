@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { AlertTriangle, Sparkles } from "lucide-react";
-import CoverageSection from "../components/dashboard/CoverageSection";
-import AIReasoning from "../components/dashboard/AIReasoning";
+
 import { optimizeRegressionSuite } from "../api";
 
+import WelcomeBanner from "../components/dashboard/WelcomeBanner";
 import OptimizationForm from "../components/dashboard/OptimizationForm";
 import StatsCards from "../components/dashboard/StatsCards";
 import SelectedTestsTable from "../components/dashboard/SelectedTestsTable";
 import HighRiskTests from "../components/dashboard/HighRiskTests";
+import CoverageSection from "../components/dashboard/CoverageSection";
+import AIReasoning from "../components/dashboard/AIReasoning";
 
 
 function Dashboard() {
@@ -67,7 +69,7 @@ function Dashboard() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
 
-      {/* Page Header */}
+      {/* Top Header */}
       <header className="border-b border-slate-800 bg-slate-950">
 
         <div className="w-full px-6 py-6 lg:px-10">
@@ -82,15 +84,17 @@ function Dashboard() {
             </div>
 
             <div>
+
               <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
                 Smart Regression Suite Optimizer
               </h1>
 
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400 sm:text-base">
                 Build a risk-aware regression suite by balancing
                 change relevance, test priority, historical failure
                 risk, and execution time.
               </p>
+
             </div>
 
           </div>
@@ -103,8 +107,12 @@ function Dashboard() {
       {/* Main Content */}
       <main className="w-full px-6 py-8 lg:px-10">
 
+        {/* Welcome */}
+        <WelcomeBanner />
+
+
         {/* Optimization Input */}
-        <div>
+        <section>
 
           <OptimizationForm
             file={file}
@@ -117,7 +125,8 @@ function Dashboard() {
             onOptimize={handleOptimize}
           />
 
-          {/* Error */}
+
+          {/* Error Message */}
           {error && (
             <div className="mt-4 flex items-start gap-3 rounded-xl border border-red-900/70 bg-red-950/30 p-4">
 
@@ -127,6 +136,7 @@ function Dashboard() {
               />
 
               <div>
+
                 <p className="text-sm font-semibold text-red-300">
                   Optimization failed
                 </p>
@@ -134,24 +144,26 @@ function Dashboard() {
                 <p className="mt-1 text-sm leading-6 text-red-400">
                   {error}
                 </p>
+
               </div>
 
             </div>
           )}
 
-        </div>
+        </section>
 
 
-        {/* Results */}
+        {/* Optimization Results */}
         {result && (
-          <div className="mt-10 space-y-8">
+          <section className="mt-10 space-y-8">
 
             {/* Results Header */}
             <div className="border-b border-slate-800 pb-5">
 
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 
                 <div>
+
                   <p className="text-sm font-medium text-blue-400">
                     Optimization complete
                   </p>
@@ -160,14 +172,17 @@ function Dashboard() {
                     Regression Suite Recommendation
                   </h2>
 
-                  <p className="mt-2 text-sm text-slate-400">
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
                     The deterministic optimizer selected the highest
-                    scoring combination that fits within your
+                    scoring combination that fits within your available
                     execution budget.
                   </p>
+
                 </div>
 
-                <div className="rounded-xl border border-slate-800 bg-slate-900 px-4 py-3">
+
+                {/* Budget Summary */}
+                <div className="shrink-0 rounded-xl border border-slate-800 bg-slate-900 px-5 py-4">
 
                   <p className="text-xs uppercase tracking-wide text-slate-500">
                     Execution Budget
@@ -187,8 +202,10 @@ function Dashboard() {
             </div>
 
 
-            {/* Overview Cards */}
-            <StatsCards result={result} />
+            {/* Overview */}
+            <StatsCards
+              result={result}
+            />
 
 
             {/* Selected Tests */}
@@ -198,24 +215,24 @@ function Dashboard() {
             />
 
 
-            {/* High Risk Tests */}
+            {/* High Risk Exclusions */}
             <HighRiskTests
               tests={result.excluded_high_risk_tests}
             />
 
 
-            {/* Temporary Coverage */}
+            {/* Coverage */}
             <CoverageSection
               coverage={result.coverage}
             />
 
 
-            {/* Temporary AI Reasoning */}
+            {/* AI Reasoning */}
             <AIReasoning
               explanations={result.ai_explanations}
             />
 
-          </div>
+          </section>
         )}
 
       </main>
@@ -224,5 +241,5 @@ function Dashboard() {
   );
 }
 
- 
+
 export default Dashboard;
