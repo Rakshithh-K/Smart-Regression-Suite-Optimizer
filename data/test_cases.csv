@@ -1,6 +1,6 @@
 test_id,module,description,priority,duration,tags,historical_failure_count
 TC001,Authentication,Verify login with valid credentials,High,5,"authentication,login,success",4
-TC002,Authentication,Verify login with invalid password,High,6,"authentication,login,failure",7
+TC002,Authentication,Verify login with invalid password,High,6,"authentication,login,failure",-4
 TC003,Authentication,Verify account lockout after failed attempts,High,8,"authentication,lockout,security",9
 TC004,Authentication,Verify password reset using registered email,Medium,10,"authentication,password-reset,email",3
 TC005,User Profile,Verify user profile update,Medium,7,"profile,user-update",2

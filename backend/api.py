@@ -1,5 +1,6 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+
 import tempfile
 import os
 
@@ -10,6 +11,9 @@ app = FastAPI(
     title="Smart Regression Suite Optimizer",
     version="1.0.0",
 )
+
+
+# Allow requests from the React frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -53,8 +57,14 @@ async def optimize(
         temp_path = temp_file.name
 
     try:
-
-        selected_tests, exclusions,summary, coverage, recommendation, ai_explanations = run_pipeline(
+        (
+            selected_tests,
+            exclusions,
+            summary,
+            coverage,
+            recommendation,
+            ai_explanations,
+        ) = run_pipeline(
             temp_path,
             change_description,
             time_budget,
@@ -71,6 +81,11 @@ async def optimize(
             "ai_explanations": ai_explanations,
         }
 
-    finally:
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error),
+        )
 
+    finally:
         os.remove(temp_path)
