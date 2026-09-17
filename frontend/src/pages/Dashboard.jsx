@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, Sparkles } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
 import { optimizeRegressionSuite } from "../api";
 
@@ -67,45 +67,10 @@ function Dashboard() {
 
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-
-      {/* Top Header */}
-      <header className="border-b border-slate-800 bg-slate-950">
-
-        <div className="w-full px-6 py-6 lg:px-10">
-
-          <div className="flex items-start gap-4">
-
-            <div className="mt-1 rounded-xl bg-blue-600/10 p-3">
-              <Sparkles
-                size={24}
-                className="text-blue-400"
-              />
-            </div>
-
-            <div>
-
-              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                Smart Regression Suite Optimizer
-              </h1>
-
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400 sm:text-base">
-                Build a risk-aware regression suite by balancing
-                change relevance, test priority, historical failure
-                risk, and execution time.
-              </p>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </header>
-
+    <div className="w-full">
 
       {/* Main Content */}
-      <main className="w-full px-6 py-8 lg:px-10">
+      <main className="w-full px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
 
         {/* Welcome */}
         <WelcomeBanner />

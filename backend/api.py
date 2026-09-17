@@ -1,16 +1,32 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import (
+    FastAPI,
+    UploadFile,
+    File,
+    Form,
+    HTTPException,
+)
+
 from fastapi.middleware.cors import CORSMiddleware
+from backend.auth_routes import router as auth_router
 
 import tempfile
 import os
 
 from src.pipeline import run_pipeline
 
+from backend.database import Base, engine
+from backend import models
 
+
+# Create FastAPI application
 app = FastAPI(
     title="Smart Regression Suite Optimizer",
     version="1.0.0",
 )
+
+
+# Create database tables
+Base.metadata.create_all(bind=engine)
 
 
 # Allow requests from the React frontend
@@ -24,6 +40,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(auth_router)
 
 
 @app.get("/")
