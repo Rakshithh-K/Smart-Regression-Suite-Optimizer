@@ -1,5 +1,5 @@
 from datetime import datetime
-
+from sqlalchemy import Boolean, DateTime, Integer, String, Text, Float
 from sqlalchemy import (
     Boolean,
     DateTime,
@@ -145,5 +145,90 @@ class UserSession(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=datetime.utcnow,
+        nullable=False,
+    )
+class RegressionRun(Base):
+    __tablename__ = "regression_runs"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        autoincrement=True,
+    )
+
+    user_id: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        index=True,
+    )
+
+    change_description: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    time_budget: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+
+    total_tests: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+
+    selected_tests: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+
+    execution_time: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+    )
+
+class RegressionResult(Base):
+    __tablename__ = "regression_results"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        autoincrement=True,
+    )
+
+    run_id: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        index=True,
+    )
+
+    test_id: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+    )
+
+    module: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+    )
+
+    duration: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+
+    priority_score: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+    )
+
+    relevance_score: Mapped[float] = mapped_column(
+        Float,
         nullable=False,
     )
