@@ -5,29 +5,20 @@ import Sidebar from "./Sidebar";
 
 function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(true);
 
   return (
-    <div
-      className={
-        darkMode
-          ? "min-h-screen bg-slate-950 text-white"
-          : "min-h-screen bg-slate-100 text-slate-900"
-      }
-    >
-      <Navbar
-        onMenuClick={() => setSidebarOpen(true)}
-        darkMode={darkMode}
-        onThemeToggle={() => setDarkMode((current) => !current)}
-      />
+    <div className="flex h-screen w-full flex-col overflow-hidden bg-slate-50/50 text-slate-900 antialiased">
+      {/* Fixed top Navbar */}
+      <Navbar onMenuClick={() => setSidebarOpen(true)} />
 
-      <div className="flex">
+      {/* Main Body with Fixed Sidebar + Scrollable Content */}
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
 
-        <main className="min-w-0 flex-1">
+        <main className="flex-1 overflow-y-auto bg-slate-50/60 transition-colors">
           <Outlet />
         </main>
       </div>

@@ -1,66 +1,45 @@
+import { ArrowRight, Sparkles, SlidersHorizontal, ShieldCheck, CheckCircle2 } from "lucide-react";
+
 function WelcomeBanner() {
   return (
-    <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900">
-      <div className="px-6 py-7 sm:px-8 sm:py-8">
-
-        <div className="max-w-3xl">
-
-          <p className="text-sm font-medium text-blue-400">
-            Regression planning
+    <div className="rounded-xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-xs">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-md bg-indigo-50 border border-indigo-100/80 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-700 mb-3">
+             
+            Deterministic Test Suite Optimization
+          </div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-slate-900">
+                Smart Regression Suite Optimizer
+            </h1>
+          <p className="mt-2 text-base sm:text-lg text-slate-600 max-w-3xl leading-relaxed">
+            Prioritize and select high-impact regression tests based on change relevance, defect history, and execution runtime constraints.
           </p>
-
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-            Welcome to Regression Optimizer
-          </h2>
-
-          <p className="mt-3 text-sm leading-6 text-slate-400 sm:text-base">
-            Have a change to test but limited time? Describe what
-            changed, upload your test cases, and set your execution
-            window. The optimizer will help you identify the tests
-            worth running.
-          </p>
-
         </div>
 
-
-        {/* Process */}
-        <div className="mt-7 flex flex-wrap items-center gap-x-3 gap-y-2">
-
-          <ProcessItem text="Describe change" />
-
-          <span className="text-slate-700">
-            →
-          </span>
-
-          <ProcessItem text="Upload tests" />
-
-          <span className="text-slate-700">
-            →
-          </span>
-
-          <ProcessItem text="Set time" />
-
-          <span className="text-slate-700">
-            →
-          </span>
-
-          <ProcessItem text="Get regression suite" />
-
+        {/* Workflow steps */}
+        <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm font-medium">
+          <WorkflowBadge icon={<SlidersHorizontal size={14} />} text="1. Change Diff" />
+          <ArrowRight size={14} className="text-slate-300 shrink-0" />
+          <WorkflowBadge icon={<ShieldCheck size={14} />} text="2. Risk Scoring" />
+          <ArrowRight size={14} className="text-slate-300 shrink-0" />
+          <div className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 font-semibold text-white shadow-xs">
+            <CheckCircle2 size={16} />
+            3. Optimized Suite
+          </div>
         </div>
-
       </div>
-    </section>
+    </div>
   );
 }
 
-
-function ProcessItem({ text }) {
+function WorkflowBadge({ icon, text }) {
   return (
-    <span className="text-xs font-medium text-slate-500 sm:text-sm">
-      {text}
-    </span>
+    <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700 font-medium">
+      {icon}
+      <span>{text}</span>
+    </div>
   );
 }
-
 
 export default WelcomeBanner;

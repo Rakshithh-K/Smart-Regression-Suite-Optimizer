@@ -4,6 +4,7 @@ import {
   Settings,
   LogOut,
   X,
+  Layers,
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -19,64 +20,73 @@ function Sidebar({ open, onClose }) {
 
   return (
     <>
+      {/* Mobile backdrop */}
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-slate-900/30 backdrop-blur-xs lg:hidden"
           onClick={onClose}
         />
       )}
 
+      {/* Sidebar container */}
       <aside
-        className={`fixed left-0 top-16 z-50 h-[calc(100vh-4rem)] w-64
-        border-r border-slate-800 bg-slate-950 transition-transform duration-200
-        lg:static lg:z-auto lg:block lg:h-[calc(100vh-4rem)]
-        ${
-          open
-            ? "translate-x-0"
-            : "-translate-x-full lg:translate-x-0"
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white transition-transform duration-200 ease-in-out
+        lg:static lg:z-auto lg:h-full lg:translate-x-0
+        ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <div className="flex justify-end p-3 lg:hidden">
+        {/* Mobile Header */}
+        <div className="flex h-16 items-center justify-between border-b border-slate-100 px-5 lg:hidden">
+          <div className="flex items-center gap-2">
+            <Layers size={18} className="text-indigo-600" />
+            <span className="text-sm font-bold uppercase tracking-wider text-slate-900">Navigation</span>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
+            className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Close sidebar"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        <nav className="space-y-1 px-3 py-2">
-          <SidebarItem
-            to="/dashboard"
-            icon={<LayoutDashboard size={19} />}
-            label="Dashboard"
-            onClick={onClose}
-          />
+        {/* Navigation list */}
+        <div className="flex-1 overflow-y-auto px-4 py-6">
+          <div className="mb-2 px-3 text-xs font-bold uppercase tracking-wider text-slate-400">
+            Platform Menu
+          </div>
+          <nav className="space-y-1.5">
+            <SidebarLink
+              to="/dashboard"
+              icon={<LayoutDashboard size={19} />}
+              label="Dashboard"
+              badge="Active"
+              onClick={onClose}
+            />
+            <SidebarLink
+              to="/history"
+              icon={<History size={19} />}
+              label="History"
+              onClick={onClose}
+            />
+            <SidebarLink
+              to="/settings"
+              icon={<Settings size={19} />}
+              label="Settings"
+              onClick={onClose}
+            />
+          </nav>
+        </div>
 
-          <SidebarItem
-            to="/history"
-            icon={<History size={19} />}
-            label="History"
-            onClick={onClose}
-          />
-
-          <SidebarItem
-            to="/settings"
-            icon={<Settings size={19} />}
-            label="Settings"
-            onClick={onClose}
-          />
-        </nav>
-
-        <div className="absolute bottom-0 w-full border-t border-slate-800 p-3">
+        {/* Sign out footer */}
+        <div className="border-t border-slate-200/90 p-4">
           <button
             type="button"
             onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm text-slate-400 hover:bg-red-950/30 hover:text-red-400"
+            className="flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-[15px] font-medium text-slate-600 transition hover:bg-rose-50 hover:text-rose-600 active:scale-[0.99]"
           >
-            <LogOut size={19} />
-            Logout
+            <LogOut size={18} />
+            <span>Sign Out</span>
           </button>
         </div>
       </aside>
@@ -84,21 +94,28 @@ function Sidebar({ open, onClose }) {
   );
 }
 
-function SidebarItem({ to, icon, label, onClick }) {
+function SidebarLink({ to, icon, label, badge, onClick }) {
   return (
     <NavLink
       to={to}
       onClick={onClick}
       className={({ isActive }) =>
-        `flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium ${
+        `flex items-center justify-between rounded-lg px-3.5 py-3 text-[15px] font-medium transition-colors ${
           isActive
-            ? "bg-blue-600/10 text-blue-400"
-            : "text-slate-400 hover:bg-slate-800 hover:text-white"
+            ? "bg-indigo-50/80 text-indigo-700 font-semibold border-l-3 border-indigo-600"
+            : "text-slate-700 hover:bg-slate-100/70 hover:text-slate-900"
         }`
       }
     >
-      {icon}
-      {label}
+      <div className="flex items-center gap-3">
+        {icon}
+        <span>{label}</span>
+      </div>
+      {badge && (
+        <span className="rounded bg-indigo-100/70 px-1.5 py-0.5 text-[11px] font-semibold text-indigo-700">
+          {badge}
+        </span>
+      )}
     </NavLink>
   );
 }
