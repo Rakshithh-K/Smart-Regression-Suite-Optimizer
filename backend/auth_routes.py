@@ -1,12 +1,26 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Request,
+    Response,
+)
+
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
+
 from backend.auth import (
     create_user,
     get_user_by_email,
+    verify_password,
 )
-from backend.schemas import RegisterRequest
+
+from backend.schemas import (
+    RegisterRequest,
+    LoginRequest,
+)
+
 from backend.otp_service import (
     create_otp,
     send_otp_email,
@@ -15,12 +29,22 @@ from backend.otp_service import (
     MAX_OTP_ATTEMPTS,
 )
 
+from backend.session import (
+    create_session,
+    get_current_user,
+    delete_session,
+)
+
 
 router = APIRouter(
     prefix="/api/auth",
     tags=["Authentication"],
 )
 
+
+# ============================================================
+# REGISTER
+# ============================================================
 
 @router.post("/register")
 async def register(
@@ -40,7 +64,6 @@ async def register(
                 detail="An account with this email already exists.",
             )
 
-        # Existing unverified account.
         user = existing_user
 
     else:
@@ -73,6 +96,10 @@ async def register(
         "email": user.email,
     }
 
+
+# ============================================================
+# VERIFY OTP
+# ============================================================
 
 @router.post("/verify-otp")
 def verify_email_otp(
@@ -109,8 +136,11 @@ def verify_email_otp(
 
     from datetime import datetime
 
+    # Check expiry
     if datetime.utcnow() > otp_record.expires_at:
+
         otp_record.verified = True
+
         db.commit()
 
         raise HTTPException(
@@ -118,8 +148,11 @@ def verify_email_otp(
             detail="OTP has expired. Please request a new OTP.",
         )
 
+    # Check maximum attempts
     if otp_record.attempts >= MAX_OTP_ATTEMPTS:
+
         otp_record.verified = True
+
         db.commit()
 
         raise HTTPException(
@@ -127,11 +160,14 @@ def verify_email_otp(
             detail="Too many incorrect attempts. Please request a new OTP.",
         )
 
+    # Verify OTP
     if not verify_otp(
         otp,
         otp_record.otp_hash,
     ):
+
         otp_record.attempts += 1
+
         db.commit()
 
         raise HTTPException(
@@ -139,6 +175,7 @@ def verify_email_otp(
             detail="Invalid OTP.",
         )
 
+    # Verification successful
     otp_record.verified = True
     user.email_verified = True
 
@@ -154,6 +191,10 @@ def verify_email_otp(
         },
     }
 
+
+# ============================================================
+# RESEND OTP
+# ============================================================
 
 @router.post("/resend-otp")
 async def resend_otp(
@@ -189,4 +230,119 @@ async def resend_otp(
 
     return {
         "message": "A new OTP has been sent.",
+    }
+
+
+# ============================================================
+# LOGIN
+# ============================================================
+
+@router.post("/login")
+def login(
+    request: LoginRequest,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    user = get_user_by_email(
+        db,
+        request.email,
+    )
+
+    # Do not reveal whether the email exists
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password.",
+        )
+
+    # Google-only account
+    if not user.password_hash:
+        raise HTTPException(
+            status_code=401,
+            detail="This account uses Google login.",
+        )
+
+    # Verify password
+    if not verify_password(
+        request.password,
+        user.password_hash,
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password.",
+        )
+
+    # Email must be verified
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=403,
+            detail="Please verify your email before logging in.",
+        )
+
+    # Create database-backed session
+    create_session(
+        db,
+        response,
+        user.id,
+    )
+
+    return {
+        "message": "Login successful.",
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "email_verified": user.email_verified,
+        },
+    }
+
+
+# ============================================================
+# CURRENT USER
+# ============================================================
+
+@router.get("/me")
+def current_user(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(
+        request,
+        db,
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated.",
+        )
+
+    return {
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "email_verified": user.email_verified,
+        }
+    }
+
+
+# ============================================================
+# LOGOUT
+# ============================================================
+
+@router.post("/logout")
+def logout(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    delete_session(
+        request,
+        response,
+        db,
+    )
+
+    return {
+        "message": "Logged out successfully.",
     }

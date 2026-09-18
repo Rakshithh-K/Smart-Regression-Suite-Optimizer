@@ -1,5 +1,5 @@
-from argon2 import PasswordHasher
 from sqlalchemy.orm import Session
+from argon2 import PasswordHasher
 
 from backend.models import User
 
@@ -15,13 +15,11 @@ def verify_password(
     password: str,
     password_hash: str,
 ) -> bool:
-
     try:
         return password_hasher.verify(
             password_hash,
             password,
         )
-
     except Exception:
         return False
 
@@ -30,10 +28,11 @@ def get_user_by_email(
     db: Session,
     email: str,
 ):
-
     return (
         db.query(User)
-        .filter(User.email == email.lower())
+        .filter(
+            User.email == email.lower()
+        )
         .first()
     )
 
@@ -44,7 +43,6 @@ def create_user(
     email: str,
     password: str,
 ):
-
     user = User(
         name=name.strip(),
         email=email.lower(),
