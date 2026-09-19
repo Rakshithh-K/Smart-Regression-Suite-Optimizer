@@ -1,47 +1,47 @@
-import { CheckCircle, Layers, Tag } from "lucide-react";
-
 function CoverageSection({ coverage = {} }) {
   const modules = Object.entries(coverage?.module_coverage || {});
   const tags = Object.entries(coverage?.tag_coverage || {});
   const totalModuleTests = modules.reduce((sum, [, c]) => sum + c, 0);
 
   return (
-    <section className="space-y-4">
-      <div className="border-b border-slate-200 pb-3">
-        <h3 className="text-xl sm:text-2xl font-bold text-slate-900">
-          Suite Coverage Analysis
-        </h3>
-        <p className="mt-1 text-sm sm:text-base text-slate-600">
-          Distribution and depth of selected regression tests across functional modules and tags.
-        </p>
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800">
+            Suite Coverage Analysis
+          </h3>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Distribution of selected test cases across functional modules and behavioral tags.
+          </p>
+        </div>
+        <span className="text-xs font-mono text-slate-500">
+          {modules.length} Modules · {tags.length} Tags
+        </span>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Module Coverage */}
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
-          <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
-            <Layers size={18} className="text-indigo-600" />
-            <h4 className="text-base font-bold text-slate-900">
-              Module Distribution ({modules.length} modules)
-            </h4>
-          </div>
+        {/* Module Distribution */}
+        <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-3 shadow-xs">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block font-mono">
+            Module Allocation
+          </span>
 
-          <div className="space-y-4">
+          <div className="space-y-2.5">
             {modules.map(([name, count]) => {
               const pct = totalModuleTests > 0 ? Math.round((count / totalModuleTests) * 100) : 0;
               return (
                 <div key={name}>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-base font-semibold text-slate-800 capitalize">
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="font-semibold text-slate-800 capitalize font-mono">
                       {name}
                     </span>
-                    <span className="text-sm font-semibold text-slate-600">
-                      {count} {count === 1 ? "test" : "tests"} · {pct}%
+                    <span className="text-slate-500 font-mono">
+                      {count} tests ({pct}%)
                     </span>
                   </div>
-                  <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                  <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-indigo-600 transition-all duration-500"
+                      className="h-full rounded-full bg-indigo-600 transition-all duration-300"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -52,35 +52,33 @@ function CoverageSection({ coverage = {} }) {
         </div>
 
         {/* Behavioral Tag Coverage */}
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
-          <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
-            <Tag size={18} className="text-indigo-600" />
-            <h4 className="text-base font-bold text-slate-900">
-              Behavioral & Domain Tags ({tags.length} tags)
-            </h4>
-          </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-5 flex flex-col justify-between space-y-4 shadow-xs">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block font-mono mb-3">
+              Behavioral & Domain Tags
+            </span>
 
-          <div className="flex flex-wrap gap-2.5">
-            {tags.map(([name, count]) => (
-              <span
-                key={name}
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm font-medium text-slate-800"
-              >
-                <span>{name}</span>
-                <span className="rounded bg-indigo-100 px-2 py-0.5 text-xs font-bold text-indigo-700">
-                  {count}
+            <div className="flex flex-wrap gap-2">
+              {tags.map(([name, count]) => (
+                <span
+                  key={name}
+                  className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-800 font-mono"
+                >
+                  <span>{name}</span>
+                  <span className="text-[11px] font-bold text-cyan-700 bg-cyan-50 border border-cyan-200 px-1.5 py-0.2 rounded">
+                    {count}
+                  </span>
                 </span>
-              </span>
-            ))}
+              ))}
+            </div>
           </div>
 
-          <div className="mt-6 rounded-lg bg-emerald-50 border border-emerald-200 p-4 flex items-center gap-2.5 text-sm font-medium text-emerald-800">
-            <CheckCircle size={18} className="text-emerald-600 shrink-0" />
-            <span>Targeted test matrix covers all impacted modules identified in the diff.</span>
+          <div className="pt-3 border-t border-slate-100 text-xs text-emerald-700 font-medium">
+            ✓ Targeted test matrix covers all impacted modules identified in the diff.
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 

@@ -1,114 +1,186 @@
-import { User, Sliders, ShieldCheck, Database, CheckCircle, Cpu } from "lucide-react";
+import { useState } from "react";
+import { User, Sliders, ShieldCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 function Settings() {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("account"); // "account" | "engine" | "security"
 
   return (
-    <div className="w-full max-w-[1400px] mx-auto px-5 py-6 sm:px-8 sm:py-8 lg:px-10 space-y-8">
+    <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6">
       {/* Header */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-          System & Workspace Settings
+      <div className="pb-6 border-b border-slate-200">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 block mb-1 font-mono">
+          System Preferences
+        </span>
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+          Settings
         </h1>
-        <p className="mt-1 text-base text-slate-600">
-          Manage QA engineer account credentials, optimization solver parameters, and algorithm thresholds.
+        <p className="mt-1 text-xs sm:text-sm text-slate-600 font-normal">
+          Manage QA engineer account credentials, knapsack solver constraints, and audit retention.
         </p>
       </div>
 
-      <div className="space-y-6">
-        {/* Account Profile Card */}
-        <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
-          <div className="border-b border-slate-200 bg-slate-50/50 px-6 py-4.5 sm:px-8 flex items-center gap-2.5">
-            <User size={20} className="text-indigo-600" />
-            <h2 className="text-lg font-bold text-slate-900">QA Engineer Profile</h2>
-          </div>
+      {/* Two-Column Settings Layout (Linear / Figma / Notion Style) */}
+      <div className="flex flex-col md:flex-row gap-8 items-start">
+        {/* Left Column: Category Navigation */}
+        <nav className="w-full md:w-56 shrink-0 space-y-1">
+          <SettingsNavButton
+            active={activeTab === "account"}
+            onClick={() => setActiveTab("account")}
+            icon={<User size={15} />}
+            label="Account Profile"
+          />
+          <SettingsNavButton
+            active={activeTab === "engine"}
+            onClick={() => setActiveTab("engine")}
+            icon={<Sliders size={15} />}
+            label="Optimization Engine"
+          />
+          <SettingsNavButton
+            active={activeTab === "security"}
+            onClick={() => setActiveTab("security")}
+            icon={<ShieldCheck size={15} />}
+            label="Security & Audit"
+          />
+        </nav>
 
-          <div className="p-6 sm:p-8 divide-y divide-slate-100 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2 gap-2">
+        {/* Right Column: Active Settings Content */}
+        <div className="flex-1 w-full rounded-xl border border-slate-200 bg-white p-6 space-y-6 shadow-xs">
+          {activeTab === "account" && (
+            <div className="space-y-6">
               <div>
-                <span className="text-sm font-semibold text-slate-800">Engineer Name</span>
-                <p className="text-xs text-slate-500">Display name across audit and history runs</p>
+                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">
+                  Account Profile
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Personal engineer identity across regression audit runs.
+                </p>
               </div>
-              <span className="text-base font-bold text-slate-900 bg-slate-50 px-3.5 py-1.5 rounded-lg border border-slate-200">
-                {user?.name || "Senior QA Automation Engineer"}
-              </span>
-            </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-4 pb-2 gap-2">
+              <div className="divide-y divide-slate-100 text-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-2 gap-2">
+                  <div>
+                    <span className="font-semibold text-slate-800 block">Engineer Name</span>
+                    <span className="text-slate-500">Display name for optimization logs</span>
+                  </div>
+                  <span className="font-mono text-slate-900 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-md">
+                    {user?.name || "Senior QA Automation Engineer"}
+                  </span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-4 gap-2">
+                  <div>
+                    <span className="font-semibold text-slate-800 block">Email Address</span>
+                    <span className="text-slate-500">Primary authentication identifier</span>
+                  </div>
+                  <span className="font-mono text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-md">
+                    {user?.email || "engineer@team.internal"}
+                  </span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-4 gap-2">
+                  <div>
+                    <span className="font-semibold text-slate-800 block">Authentication Status</span>
+                    <span className="text-slate-500">Active session token state</span>
+                  </div>
+                  <span className="font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">
+                    Active Session
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "engine" && (
+            <div className="space-y-6">
               <div>
-                <span className="text-sm font-semibold text-slate-800">Email Address</span>
-                <p className="text-xs text-slate-500">Primary authentication identifier</p>
+                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">
+                  Optimization Engine Constraints
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Parameters governing test selection and knapsack 0/1 calculation.
+                </p>
               </div>
-              <span className="text-base font-bold text-slate-900 bg-slate-50 px-3.5 py-1.5 rounded-lg border border-slate-200 font-mono text-sm">
-                {user?.email || "engineer@team.internal"}
-              </span>
-            </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-4 pb-2 gap-2">
+              <div className="divide-y divide-slate-100 text-xs space-y-4">
+                <div className="pt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <span className="font-semibold text-slate-800 block">0/1 Knapsack Dynamic Solver</span>
+                    <span className="text-slate-500">Guaranteed mathematical optimality and exact reproducibility</span>
+                  </div>
+                  <span className="font-mono text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-md">
+                    Deterministic Mode
+                  </span>
+                </div>
+
+                <div className="pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <span className="font-semibold text-slate-800 block">Failure Penalty Multiplier</span>
+                    <span className="text-slate-500">Weights test cases with higher historical defect counts</span>
+                  </div>
+                  <span className="font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">
+                    1.5x Weight Active
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "security" && (
+            <div className="space-y-6">
               <div>
-                <span className="text-sm font-semibold text-slate-800">Authentication Session</span>
-                <p className="text-xs text-slate-500">Security cookie state</p>
+                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">
+                  Security & Audit Retention
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Audit storage policy and execution logging settings.
+                </p>
               </div>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 border border-emerald-200">
-                <CheckCircle size={14} /> Active Authenticated Session
-              </span>
+
+              <div className="divide-y divide-slate-100 text-xs space-y-4">
+                <div className="pt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <span className="font-semibold text-slate-800 block">Audit Run Retention</span>
+                    <span className="text-slate-500">Persists selection breakdown and rationale for all runs</span>
+                  </div>
+                  <span className="font-mono text-slate-700 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-md">
+                    Permanent Retention
+                  </span>
+                </div>
+
+                <div className="pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <span className="font-semibold text-slate-800 block">Session Security</span>
+                    <span className="text-slate-500">HttpOnly cookie authentication with CSRF protection</span>
+                  </div>
+                  <span className="font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">
+                    Enforced
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-
-        {/* Algorithm & Optimizer Defaults Card */}
-        <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
-          <div className="border-b border-slate-200 bg-slate-50/50 px-6 py-4.5 sm:px-8 flex items-center gap-2.5">
-            <Sliders size={20} className="text-indigo-600" />
-            <h2 className="text-lg font-bold text-slate-900">Optimization Engine Constraints</h2>
-          </div>
-
-          <div className="p-6 sm:p-8 divide-y divide-slate-100 space-y-4">
-            <SettingsItem
-              icon={<Cpu size={20} className="text-indigo-600" />}
-              title="Deterministic Knapsack 0/1 Solver"
-              description="Applies dynamic programming formulation for guaranteed mathematical optimality and exact reproducibility."
-              badge="Deterministic Mode"
-              badgeColor="text-indigo-700 bg-indigo-50 border-indigo-200"
-            />
-
-            <SettingsItem
-              icon={<ShieldCheck size={20} className="text-emerald-600" />}
-              title="Historical Failure Penalty Multiplier"
-              description="Weights test cases with higher historical failure counts to prioritize defect detection."
-              badge="Active (1.5x Weight)"
-              badgeColor="text-emerald-700 bg-emerald-50 border-emerald-200"
-            />
-
-            <SettingsItem
-              icon={<Database size={20} className="text-amber-600" />}
-              title="Audit Run Retention"
-              description="Persists detailed selection breakdown, coverage metrics, and rationale for all completed optimization runs."
-              badge="Permanent Retention"
-              badgeColor="text-slate-700 bg-slate-100 border-slate-200"
-            />
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function SettingsItem({ icon, title, description, badge, badgeColor }) {
+function SettingsNavButton({ active, onClick, icon, label }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-3 gap-3">
-      <div className="flex items-start gap-3.5 max-w-2xl">
-        <div className="mt-1 shrink-0">{icon}</div>
-        <div>
-          <h4 className="text-base font-bold text-slate-900">{title}</h4>
-          <p className="text-sm text-slate-600 mt-0.5 leading-relaxed">{description}</p>
-        </div>
-      </div>
-      <span className={`self-start sm:self-auto rounded-lg px-3.5 py-1.5 text-xs font-bold border ${badgeColor}`}>
-        {badge}
-      </span>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition text-left ${
+        active
+          ? "bg-slate-100 text-slate-900 font-semibold shadow-2xs"
+          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+      }`}
+    >
+      <span className="shrink-0">{icon}</span>
+      <span>{label}</span>
+    </button>
   );
 }
 

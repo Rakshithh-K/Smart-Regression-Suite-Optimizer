@@ -6,97 +6,90 @@ function StatsCards({ result }) {
   const selectedCount = result.summary?.selected_count ?? 0;
   const highRiskExcluded = result.summary?.excluded_high_risk_count ?? 0;
 
+  const formatCount = (n) => (n < 10 ? `0${n}` : `${n}`);
+
   return (
-    <div className="space-y-6">
-      {/* 4 Metric Cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <MetricCard
-          label="SELECTED TESTS"
-          value={selectedCount}
-          subtext="Included in suite"
-          accent="indigo"
-        />
-        <MetricCard
-          label="EXECUTION TIME"
-          value={`${timeUsed} min`}
-          subtext="Planned runtime"
-          accent="slate"
-        />
-        <MetricCard
-          label="TIME BUDGET"
-          value={`${timeBudget} min`}
-          subtext="Allocated threshold"
-          accent="slate"
-        />
-        <MetricCard
-          label="HIGH-RISK EXCLUDED"
-          value={highRiskExcluded}
-          subtext={highRiskExcluded > 0 ? "Exceeded time budget" : "All critical tests fit"}
-          accent={highRiskExcluded > 0 ? "amber" : "emerald"}
-        />
-      </div>
-
-      {/* Budget Visualization */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm sm:text-base font-bold text-slate-900">
-              Budget Utilization:
-            </span>
-            <span className="text-sm sm:text-base font-bold text-indigo-700 font-mono">
-              {timeUsed} / {timeBudget} min
-            </span>
-          </div>
-
-          <div className="flex items-center gap-4 text-xs sm:text-sm font-semibold">
-            <span className="rounded bg-emerald-50 px-2.5 py-1 text-emerald-700 border border-emerald-200">
-              {pct}% used
-            </span>
-            <span className="text-slate-600">
-              {remaining} min remaining
-            </span>
-          </div>
+    <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+      {/* Coherent 4-column information system */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
+        {/* Selected Tests */}
+        <div className="p-5 sm:p-6">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block font-mono">
+            Selected Tests
+          </span>
+          <p className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-slate-900 font-mono">
+            {formatCount(selectedCount)}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Included in regression suite
+          </p>
         </div>
 
-        {/* Progress bar */}
-        <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
+        {/* Execution Time */}
+        <div className="p-5 sm:p-6">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block font-mono">
+            Execution
+          </span>
+          <p className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-indigo-600 font-mono">
+            {timeUsed} <span className="text-base font-medium text-slate-500 font-sans">min</span>
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            {pct}% of allocated budget
+          </p>
+        </div>
+
+        {/* Time Budget */}
+        <div className="p-5 sm:p-6">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block font-mono">
+            Time Budget
+          </span>
+          <p className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-slate-800 font-mono">
+            {timeBudget} <span className="text-base font-medium text-slate-500 font-sans">min</span>
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            {remaining} min remaining capacity
+          </p>
+        </div>
+
+        {/* High-Risk Excluded */}
+        <div className="p-5 sm:p-6">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block font-mono">
+            High-Risk Excluded
+          </span>
+          <p
+            className={`mt-2 text-3xl sm:text-4xl font-black tracking-tight font-mono ${
+              highRiskExcluded > 0 ? "text-amber-600" : "text-emerald-600"
+            }`}
+          >
+            {formatCount(highRiskExcluded)}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            {highRiskExcluded > 0 ? "Requires additional execution time" : "All critical tests fit"}
+          </p>
+        </div>
+      </div>
+
+      {/* Slim integrated budget progress bar */}
+      <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2 text-xs font-mono text-slate-600">
+          <span>Budget Utilization:</span>
+          <span className="text-slate-900 font-bold">{timeUsed}m / {timeBudget}m</span>
+          <span>({pct}%)</span>
+        </div>
+
+        <div className="flex-1 max-w-xs h-1.5 rounded-full bg-slate-200 overflow-hidden">
           <div
-            className={`h-full rounded-full transition-all duration-700 ${
+            className={`h-full rounded-full transition-all duration-500 ${
               pct >= 100
+                ? "bg-amber-500"
+                : pct > 80
                 ? "bg-indigo-600"
-                : pct > 75
-                ? "bg-indigo-500"
                 : "bg-emerald-500"
             }`}
             style={{ width: `${pct}%` }}
           />
         </div>
       </div>
-    </div>
-  );
-}
-
-function MetricCard({ label, value, subtext, accent }) {
-  const accentClasses = {
-    indigo: "text-indigo-600",
-    amber: "text-amber-600",
-    emerald: "text-emerald-600",
-    slate: "text-slate-900",
-  };
-
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
-      <p className="text-xs sm:text-sm font-bold tracking-wider text-slate-500 uppercase">
-        {label}
-      </p>
-      <p className={`mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight ${accentClasses[accent] || accentClasses.slate}`}>
-        {value}
-      </p>
-      {subtext && (
-        <p className="mt-1 text-xs sm:text-sm font-medium text-slate-400">
-          {subtext}
-        </p>
-      )}
     </div>
   );
 }

@@ -1,17 +1,10 @@
 import { useEffect, useState } from "react";
 import {
-  ChevronRight,
-  ChevronDown,
-  Clock,
   Loader2,
-  TestTube2,
   AlertCircle,
   ArrowLeft,
+  ChevronRight,
   FileClock,
-  CheckCircle2,
-  Calendar,
-  Layers,
-  Sparkles,
 } from "lucide-react";
 import axios from "axios";
 
@@ -23,7 +16,6 @@ function History() {
   const [error, setError] = useState("");
   const [selectedRun, setSelectedRun] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [expandedTestId, setExpandedTestId] = useState(null);
 
   const loadHistory = async () => {
     try {
@@ -49,7 +41,6 @@ function History() {
       setError("");
       const response = await axios.get(`${API_BASE_URL}/api/history/${runId}`, { withCredentials: true });
       setSelectedRun(response.data);
-      setExpandedTestId(null);
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.detail || "Unable to load optimization details.");
@@ -64,181 +55,129 @@ function History() {
   if (selectedRun && !detailLoading) {
     const run = selectedRun.run;
     const tests = selectedRun.selected_tests || [];
+    const utilization = Math.min(100, Math.round((run.execution_time / Math.max(run.time_budget, 1)) * 100));
 
     return (
-      <div className="w-full max-w-[1680px] mx-auto px-5 py-6 sm:px-8 sm:py-8 lg:px-10 space-y-8">
-        {/* Back Button */}
+      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6">
         <div>
           <button
             type="button"
             onClick={closeDetails}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={14} />
             <span>Back to Optimization History</span>
           </button>
         </div>
 
-        {/* Saved Run Header Card */}
-        <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
-          <div className="flex flex-wrap items-center gap-3 mb-3">
-            <span className="font-mono text-sm font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded border border-indigo-200">
-              RUN {run.id}
+        {/* Run Summary Header */}
+        <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-4 shadow-xs">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="font-mono text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded">
+              RUN #{run.id}
             </span>
-            <div className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 font-medium">
-              <Calendar size={15} />
-              <span>{new Date(run.created_at).toLocaleString()}</span>
-            </div>
+            <span className="text-xs text-slate-500 font-mono">
+              {new Date(run.created_at).toLocaleString()}
+            </span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-snug">
             {run.change_description}
           </h1>
 
-          {/* Metric Summary Blocks */}
-          <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          {/* Coherent Metrics Strip */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-slate-100">
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block font-mono">
                 Tests Selected
               </span>
-              <p className="mt-2 text-2xl sm:text-3xl font-extrabold text-indigo-600">
+              <p className="mt-1 text-2xl font-black text-slate-900 font-mono">
                 {tests.length}{" "}
-                <span className="text-base font-semibold text-slate-400">
+                <span className="text-xs font-normal text-slate-400 font-sans">
                   / {run.total_tests ?? run.selected_tests}
                 </span>
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block font-mono">
                 Execution Time
               </span>
-              <p className="mt-2 text-2xl sm:text-3xl font-extrabold text-slate-900">
-                {run.execution_time} min
+              <p className="mt-1 text-2xl font-black text-indigo-600 font-mono">
+                {run.execution_time} <span className="text-xs font-normal text-slate-400 font-sans">min</span>
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block font-mono">
                 Time Budget
               </span>
-              <p className="mt-2 text-2xl sm:text-3xl font-extrabold text-slate-900">
-                {run.time_budget} min
+              <p className="mt-1 text-2xl font-black text-slate-800 font-mono">
+                {run.time_budget} <span className="text-xs font-normal text-slate-400 font-sans">min</span>
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block font-mono">
                 Budget Utilization
               </span>
-              <p className="mt-2 text-2xl sm:text-3xl font-extrabold text-emerald-600">
-                {Math.min(100, Math.round((run.execution_time / Math.max(run.time_budget, 1)) * 100))}%
+              <p className="mt-1 text-2xl font-black text-emerald-600 font-mono">
+                {utilization}%
               </p>
             </div>
           </div>
         </div>
 
-        {/* Selected Tests in same compact clickable row list design */}
-        <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-            <div>
-              <h2 className="text-xl font-bold text-slate-900">
-                Selected Tests in Run {run.id}
-              </h2>
-              <p className="text-sm text-slate-500 mt-0.5">
-                Click any row to reveal priority index and module details
-              </p>
-            </div>
-            <span className="rounded-full bg-indigo-50 px-3 py-1 text-sm font-bold text-indigo-700 border border-indigo-200">
+        {/* Selected Tests Table */}
+        <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-4 shadow-xs">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">
+              Selected Tests in Run #{run.id}
+            </h2>
+            <span className="text-xs font-mono text-slate-500">
               {tests.length} tests
             </span>
           </div>
 
-          <div className="space-y-3">
-            {tests.map((test) => {
-              const isExpanded = expandedTestId === test.test_id;
-              const relevance = Number(test.relevance_score ?? 0).toFixed(1);
-              const score = Number(test.priority_score ?? 0).toFixed(1);
-
-              return (
-                <div
-                  key={test.test_id}
-                  className={`rounded-xl border bg-white transition-all shadow-xs overflow-hidden ${
-                    isExpanded
-                      ? "border-indigo-500 ring-2 ring-indigo-500/10"
-                      : "border-slate-200 hover:border-indigo-300 hover:shadow-sm"
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setExpandedTestId((prev) => (prev === test.test_id ? null : test.test_id))}
-                    className="w-full text-left p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer focus:outline-none"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-2">
-                        <span className="font-mono text-sm font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded border border-indigo-100">
-                          {test.test_id}
-                        </span>
-                        <span className="text-xs sm:text-sm font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded">
-                          {test.module}
-                        </span>
-                      </div>
-                      <h4 className="text-base sm:text-lg font-semibold text-slate-900">
-                        {test.description || "Regression verification test case"}
-                      </h4>
-                    </div>
-
-                    <div className="flex items-center flex-wrap sm:flex-nowrap gap-4 lg:gap-6 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
-                      <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
-                        <Clock size={16} className="text-slate-400" />
-                        <span>{test.duration} min</span>
-                      </div>
-                      <div className="text-sm font-medium text-slate-600">
-                        <span className="text-slate-400 mr-1 text-xs uppercase font-semibold">Rel:</span>
-                        <span className="font-semibold text-slate-800">{relevance}</span>
-                      </div>
-                      <div className="rounded-md bg-indigo-50 border border-indigo-200/80 px-2.5 py-1 text-xs sm:text-sm font-bold text-indigo-700">
-                        Score {score}
-                      </div>
-                      <div className="text-slate-400">
-                        {isExpanded ? <ChevronDown size={22} className="text-indigo-600" /> : <ChevronRight size={22} />}
-                      </div>
-                    </div>
-                  </button>
-
-                  {isExpanded && (
-                    <div className="border-t border-slate-200/80 bg-slate-50/50 p-5 sm:p-6 transition-all">
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-lg bg-white border border-slate-200">
-                        <div>
-                          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-                            Test ID
-                          </span>
-                          <span className="font-mono text-sm font-bold text-slate-900">{test.test_id}</span>
-                        </div>
-                        <div>
-                          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-                            Module
-                          </span>
-                          <span className="text-sm font-bold text-slate-800 capitalize">{test.module}</span>
-                        </div>
-                        <div>
-                          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-                            Runtime
-                          </span>
-                          <span className="text-sm font-bold text-slate-800">{test.duration} minutes</span>
-                        </div>
-                        <div>
-                          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-                            Payoff Score
-                          </span>
-                          <span className="text-sm font-bold text-indigo-700">{score} pts</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="text-slate-500 font-mono uppercase tracking-wider text-[11px] border-b border-slate-200 bg-slate-50">
+                <tr>
+                  <th className="py-2.5 px-3">Test ID</th>
+                  <th className="py-2.5 px-3">Description</th>
+                  <th className="py-2.5 px-3">Module</th>
+                  <th className="py-2.5 px-3 text-right">Runtime</th>
+                  <th className="py-2.5 px-3 text-right">Relevance</th>
+                  <th className="py-2.5 px-3 text-right">Score</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {tests.map((test) => (
+                  <tr key={test.test_id} className="hover:bg-slate-50/80 transition">
+                    <td className="py-2.5 px-3 font-mono font-bold text-indigo-700">
+                      {test.test_id}
+                    </td>
+                    <td className="py-2.5 px-3 text-slate-800 font-medium">
+                      {test.description || "Regression test"}
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <span className="font-mono text-[11px] text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                        {test.module}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono text-slate-700">
+                      {test.duration}m
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono text-slate-500">
+                      {Number(test.relevance_score ?? 0).toFixed(1)}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono font-bold text-indigo-700">
+                      {Number(test.priority_score ?? 0).toFixed(1)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -247,121 +186,141 @@ function History() {
 
   // List view
   return (
-    <div className="w-full max-w-[1680px] mx-auto px-5 py-6 sm:px-8 sm:py-8 lg:px-10 space-y-6">
-      {/* Header */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Optimization Run History
-            </h1>
-            <p className="mt-1 text-base text-slate-600">
-              Audit log of previous regression suite knapsack optimization runs and test selections.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={loadHistory}
-            className="self-start sm:self-auto rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition"
-          >
-            Refresh History
-          </button>
+    <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6">
+      {/* Editorial Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-slate-200">
+        <div>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 block mb-1 font-mono">
+            Audit Log
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+            Optimization History
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-slate-600 font-normal">
+            Historical log of regression suite knapsack optimization runs and test allocations.
+          </p>
         </div>
+        <button
+          type="button"
+          onClick={loadHistory}
+          className="self-start sm:self-auto rounded-md border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-xs"
+        >
+          Refresh History
+        </button>
       </div>
 
       {error && (
-        <div className="flex items-center gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-base font-medium text-rose-800">
-          <AlertCircle size={20} className="shrink-0 text-rose-600" />
+        <div className="flex items-center gap-2.5 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-700">
+          <AlertCircle size={16} className="shrink-0 text-rose-600" />
           <span>{error}</span>
         </div>
       )}
 
       {loading && (
-        <div className="flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white py-20 text-slate-600">
-          <Loader2 size={24} className="animate-spin text-indigo-600" />
-          <span className="text-base font-semibold">Loading optimization runs...</span>
+        <div className="flex items-center justify-center gap-2.5 py-20 text-slate-500">
+          <Loader2 size={18} className="animate-spin text-indigo-600" />
+          <span className="text-xs font-semibold">Loading optimization runs...</span>
         </div>
       )}
 
       {!loading && !error && history.length === 0 && (
         <div className="rounded-xl border border-slate-200 bg-white p-16 text-center shadow-xs">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-4">
-            <FileClock size={28} />
-          </div>
-          <h3 className="text-lg font-bold text-slate-900">No Optimization Runs Yet</h3>
-          <p className="mt-1 text-sm text-slate-500 max-w-sm mx-auto">
-            Execute a regression suite optimization from the Dashboard to record your first run here.
+          <FileClock size={28} className="mx-auto text-slate-400 mb-3" />
+          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">No Optimization Runs Recorded</h3>
+          <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto">
+            Execute a regression suite optimization from the Dashboard to log your first run here.
           </p>
         </div>
       )}
 
       {detailLoading && (
-        <div className="flex items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white py-20 text-slate-600">
-          <Loader2 size={24} className="animate-spin text-indigo-600" />
-          <span className="text-base font-semibold">Retrieving run details...</span>
+        <div className="flex items-center justify-center gap-2.5 py-20 text-slate-500">
+          <Loader2 size={18} className="animate-spin text-indigo-600" />
+          <span className="text-xs font-semibold">Retrieving run details...</span>
         </div>
       )}
 
-      {/* History Rows List */}
+      {/* History Data Table */}
       {!loading && history.length > 0 && !selectedRun && !detailLoading && (
-        <div className="space-y-3">
-          {history.map((run) => (
-            <button
-              key={run.id}
-              type="button"
-              onClick={() => openRun(run.id)}
-              className="group w-full text-left rounded-xl border border-slate-200 bg-white p-5 sm:p-6 transition-all hover:border-indigo-400 hover:shadow-sm focus:outline-none"
-            >
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                {/* Left: ID + Description */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="font-mono text-sm font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded border border-indigo-200">
-                      RUN {run.id}
-                    </span>
-                    <span className="text-xs sm:text-sm font-medium text-slate-400">
-                      {new Date(run.created_at).toLocaleDateString("en-US", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
+        <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-500 border-b border-slate-200 font-mono uppercase tracking-wider text-[11px]">
+                <tr>
+                  <th className="py-3 px-4 font-bold">Run</th>
+                  <th className="py-3 px-4 font-bold">Date</th>
+                  <th className="py-3 px-4 font-bold">Change Description</th>
+                  <th className="py-3 px-4 font-bold text-right">Analyzed</th>
+                  <th className="py-3 px-4 font-bold text-right">Selected</th>
+                  <th className="py-3 px-4 font-bold text-right">Runtime / Budget</th>
+                  <th className="py-3 px-4 font-bold text-right">Utilization</th>
+                  <th className="py-3 px-4 w-8"></th>
+                </tr>
+              </thead>
 
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-2">
-                    {run.change_description}
-                  </h3>
-                </div>
+              <tbody className="divide-y divide-slate-100">
+                {history.map((run) => {
+                  const utilization = Math.min(
+                    100,
+                    Math.round((run.execution_time / Math.max(run.time_budget, 1)) * 100)
+                  );
 
-                {/* Right: Metrics + Chevron */}
-                <div className="flex items-center flex-wrap sm:flex-nowrap gap-5 lg:gap-8 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100">
-                  <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                    <Clock size={18} className="text-slate-400" />
-                    <span>
-                      <strong className="text-slate-900 font-bold">{run.execution_time} min</strong>{" "}
-                      <span className="text-slate-400">/ {run.time_budget}m budget</span>
-                    </span>
-                  </div>
+                  return (
+                    <tr
+                      key={run.id}
+                      onClick={() => openRun(run.id)}
+                      className="group hover:bg-slate-50/80 transition cursor-pointer select-none"
+                    >
+                      <td className="py-3.5 px-4 font-mono font-bold text-indigo-700">
+                        #{run.id}
+                      </td>
 
-                  <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                    <TestTube2 size={18} className="text-slate-400" />
-                    <span>
-                      <strong className="text-indigo-600 font-bold">{run.selected_tests}</strong>{" "}
-                      <span className="text-slate-400">
-                        {run.total_tests ? `/ ${run.total_tests} tests` : "selected"}
-                      </span>
-                    </span>
-                  </div>
+                      <td className="py-3.5 px-4 font-mono text-slate-500 whitespace-nowrap">
+                        {new Date(run.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </td>
 
-                  <div className="text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all">
-                    <ChevronRight size={24} />
-                  </div>
-                </div>
-              </div>
-            </button>
-          ))}
+                      <td className="py-3.5 px-4 text-slate-900 font-medium max-w-xs sm:max-w-md truncate">
+                        {run.change_description}
+                      </td>
+
+                      <td className="py-3.5 px-4 text-right font-mono text-slate-500">
+                        {run.total_tests || "—"}
+                      </td>
+
+                      <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900">
+                        {run.selected_tests}
+                      </td>
+
+                      <td className="py-3.5 px-4 text-right font-mono text-slate-700 whitespace-nowrap">
+                        {run.execution_time}m / {run.time_budget}m
+                      </td>
+
+                      <td className="py-3.5 px-4 text-right font-mono">
+                        <span
+                          className={`rounded px-1.5 py-0.5 text-[11px] font-bold ${
+                            utilization >= 100
+                              ? "text-amber-700 bg-amber-50 border border-amber-200"
+                              : "text-emerald-700 bg-emerald-50 border border-emerald-200"
+                          }`}
+                        >
+                          {utilization}%
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-slate-400 group-hover:text-slate-700">
+                        <ChevronRight size={14} />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

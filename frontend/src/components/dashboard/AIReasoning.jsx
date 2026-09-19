@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle2, ChevronDown, ChevronRight, Cpu, Scale, XCircle } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 function AIReasoning({ explanations = {} }) {
   const selected = Object.entries(explanations?.selected_reasons || {});
@@ -16,78 +16,63 @@ function AIReasoning({ explanations = {} }) {
   };
 
   return (
-    <section className="space-y-6">
-      <div className="border-b border-slate-200 pb-3">
-        <div className="flex items-center gap-2">
-          <Cpu size={20} className="text-indigo-600" />
-          <h3 className="text-xl sm:text-2xl font-bold text-slate-900">
-            Optimization Decision Rationale
-          </h3>
-        </div>
-        <p className="mt-1 text-sm sm:text-base text-slate-600">
-          Deterministic trade-off formulation and individual case selection reasoning.
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800">
+          Decision Rationale & Engineering Notes
+        </h3>
+        <p className="text-xs text-slate-500 mt-0.5">
+          Mathematical optimization trade-offs and individual test selection notes.
         </p>
       </div>
 
-      {/* Overall Trade-off */}
+      {/* System Trade-off Box */}
       {explanations?.overall_tradeoff && (
-        <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-6 shadow-xs">
-          <div className="flex items-center gap-2 mb-2 text-indigo-900">
-            <Scale size={20} className="text-indigo-600" />
-            <h4 className="text-base font-bold uppercase tracking-wider text-indigo-950">
-              System Trade-Off Analysis
-            </h4>
-          </div>
-          <p className="text-base sm:text-[17px] text-slate-800 leading-relaxed max-w-4xl">
+        <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-5 space-y-1.5 shadow-xs">
+          <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-indigo-700 block">
+            Budget Trade-Off Analysis
+          </span>
+          <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-normal">
             {explanations.overall_tradeoff}
           </p>
         </div>
       )}
 
-      {/* 2 Columns: Selected vs Excluded Reasoning */}
+      {/* 2 Columns: Selected vs Excluded Rationale */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Selected Reasoning */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 pb-1 border-b border-slate-200">
-            <CheckCircle2 size={18} className="text-emerald-600" />
-            <h4 className="text-base font-bold text-slate-900">
-              Selected Test Cases ({selected.length})
-            </h4>
+        {/* Selected Tests Rationale */}
+        <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-3 shadow-xs">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+              Why Selected ({selected.length})
+            </span>
+            <span className="text-[11px] text-slate-500 font-mono">Payoff Priority</span>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-1.5">
             {selected.map(([testId, reason]) => {
               const isExpanded = !!expandedSelected[testId];
               return (
                 <div
                   key={testId}
-                  className="rounded-lg border border-slate-200 bg-white shadow-xs overflow-hidden"
+                  className="rounded-lg border border-slate-200 bg-slate-50/50 overflow-hidden"
                 >
                   <button
                     type="button"
                     onClick={() => toggleSelected(testId)}
-                    className="w-full text-left p-4 flex items-center justify-between gap-3 hover:bg-slate-50 transition"
+                    className="w-full text-left px-3.5 py-2.5 flex items-center justify-between gap-2 hover:bg-slate-100/70 transition"
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="font-mono text-sm font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
-                        {testId}
-                      </span>
-                      <span className="text-sm font-semibold text-slate-800 truncate">
-                        Selection Rationale
-                      </span>
-                    </div>
-                    {isExpanded ? (
-                      <ChevronDown size={18} className="text-slate-400 shrink-0" />
-                    ) : (
-                      <ChevronRight size={18} className="text-slate-400 shrink-0" />
-                    )}
+                    <span className="font-mono text-xs font-bold text-indigo-700">
+                      {testId}
+                    </span>
+                    <span className="text-slate-400">
+                      {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                    </span>
                   </button>
 
                   {isExpanded && (
-                    <div className="px-4 pb-4 pt-1 border-t border-slate-100 bg-slate-50/50">
-                      <p className="text-sm sm:text-base text-slate-700 leading-relaxed">
-                        {reason}
-                      </p>
+                    <div className="px-3.5 pb-3 pt-1 border-t border-slate-200 bg-white text-xs text-slate-700 leading-relaxed font-normal">
+                      {reason}
                     </div>
                   )}
                 </div>
@@ -96,48 +81,39 @@ function AIReasoning({ explanations = {} }) {
           </div>
         </div>
 
-        {/* Excluded Reasoning */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 pb-1 border-b border-slate-200">
-            <XCircle size={18} className="text-slate-400" />
-            <h4 className="text-base font-bold text-slate-900">
-              Excluded Test Cases ({excluded.length})
-            </h4>
+        {/* Excluded Tests Rationale */}
+        <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-3 shadow-xs">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+              Why Excluded ({excluded.length})
+            </span>
+            <span className="text-[11px] text-slate-500 font-mono">Budget Constraint</span>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-1.5">
             {excluded.map(([testId, reason]) => {
               const isExpanded = !!expandedExcluded[testId];
               return (
                 <div
                   key={testId}
-                  className="rounded-lg border border-slate-200 bg-white shadow-xs overflow-hidden"
+                  className="rounded-lg border border-slate-200 bg-slate-50/50 overflow-hidden"
                 >
                   <button
                     type="button"
                     onClick={() => toggleExcluded(testId)}
-                    className="w-full text-left p-4 flex items-center justify-between gap-3 hover:bg-slate-50 transition"
+                    className="w-full text-left px-3.5 py-2.5 flex items-center justify-between gap-2 hover:bg-slate-100/70 transition"
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="font-mono text-sm font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                        {testId}
-                      </span>
-                      <span className="text-sm font-semibold text-slate-800 truncate">
-                        Exclusion Cause
-                      </span>
-                    </div>
-                    {isExpanded ? (
-                      <ChevronDown size={18} className="text-slate-400 shrink-0" />
-                    ) : (
-                      <ChevronRight size={18} className="text-slate-400 shrink-0" />
-                    )}
+                    <span className="font-mono text-xs font-bold text-amber-700">
+                      {testId}
+                    </span>
+                    <span className="text-slate-400">
+                      {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                    </span>
                   </button>
 
                   {isExpanded && (
-                    <div className="px-4 pb-4 pt-1 border-t border-slate-100 bg-slate-50/50">
-                      <p className="text-sm sm:text-base text-slate-700 leading-relaxed">
-                        {reason}
-                      </p>
+                    <div className="px-3.5 pb-3 pt-1 border-t border-slate-200 bg-white text-xs text-slate-700 leading-relaxed font-normal">
+                      {reason}
                     </div>
                   )}
                 </div>
@@ -146,7 +122,7 @@ function AIReasoning({ explanations = {} }) {
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 

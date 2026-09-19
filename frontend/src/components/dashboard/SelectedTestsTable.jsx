@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Clock, AlertCircle, Sparkles, CheckCircle2 } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 function SelectedTestsTable({ tests = [], recommendation = {}, aiExplanations = {} }) {
   const [expandedId, setExpandedId] = useState(null);
@@ -10,173 +10,138 @@ function SelectedTestsTable({ tests = [], recommendation = {}, aiExplanations = 
   };
 
   return (
-    <section className="space-y-4">
-      {/* Section Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-200 pb-3">
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <CheckCircle2 size={20} className="text-indigo-600" />
-            <h3 className="text-xl sm:text-2xl font-bold text-slate-900">
-              Selected Regression Tests
-            </h3>
-            <span className="rounded-full bg-indigo-50 px-3 py-0.5 text-sm font-bold text-indigo-700 border border-indigo-200">
-              {tests.length} tests
-            </span>
-          </div>
-          <p className="mt-1 text-sm sm:text-base text-slate-600">
-            {recommendation?.total_execution_time ?? 0} / {recommendation?.time_budget ?? 0} min execution budget utilized
+          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800">
+            Selected Regression Tests
+          </h3>
+          <p className="text-xs text-slate-500 mt-0.5">
+            {recommendation?.total_execution_time ?? 0}m of {recommendation?.time_budget ?? 0}m budget utilized · Click row to inspect decision rationale
           </p>
         </div>
-
-        <p className="text-xs sm:text-sm text-slate-500 font-medium">
-          Click any row to view selection rationale
-        </p>
+        <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+          {tests.length} tests selected
+        </span>
       </div>
 
       {tests.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-8 text-center text-xs text-slate-500">
           No tests selected within the current constraints.
         </div>
       ) : (
-        <div className="space-y-3">
-          {tests.map((test) => {
-            const isExpanded = expandedId === test.test_id;
-            const reason = reasons[test.test_id];
-            const relevance = Number(test.relevance_score ?? 0).toFixed(1);
-            const priorityScore = Number(test.priority_score ?? 0).toFixed(1);
-            const failures = test.historical_failure_count ?? 0;
+        <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              {/* Dense table header */}
+              <thead className="bg-slate-50 text-slate-500 border-b border-slate-200 font-mono uppercase tracking-wider text-[11px]">
+                <tr>
+                  <th className="py-3 px-4 w-8"></th>
+                  <th className="py-3 px-4 font-bold">Test</th>
+                  <th className="py-3 px-4 font-bold">Module</th>
+                  <th className="py-3 px-4 font-bold">Priority</th>
+                  <th className="py-3 px-4 font-bold text-right">Duration</th>
+                  <th className="py-3 px-4 font-bold text-right">Relevance</th>
+                  <th className="py-3 px-4 font-bold text-right">Failures</th>
+                  <th className="py-3 px-4 font-bold text-right">Score</th>
+                </tr>
+              </thead>
 
-            return (
-              <div
-                key={test.test_id}
-                className={`rounded-xl border bg-white transition-all shadow-xs overflow-hidden ${
-                  isExpanded
-                    ? "border-indigo-500 ring-2 ring-indigo-500/10"
-                    : "border-slate-200 hover:border-indigo-300 hover:shadow-sm"
-                }`}
-              >
-                {/* Compact Clickable Row */}
-                <button
-                  type="button"
-                  onClick={() => toggleExpand(test.test_id)}
-                  className="w-full text-left p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer focus:outline-none"
-                  aria-expanded={isExpanded}
-                >
-                  {/* Left Column: ID + Description */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <span className="font-mono text-sm font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded border border-indigo-100">
-                        {test.test_id}
-                      </span>
-                      <span className="text-xs sm:text-sm font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded">
-                        {test.module}
-                      </span>
-                      {test.priority && (
-                        <PriorityBadge priority={test.priority} />
-                      )}
-                    </div>
+              {/* Table rows */}
+              <tbody className="divide-y divide-slate-100">
+                {tests.map((test) => {
+                  const isExpanded = expandedId === test.test_id;
+                  const reason = reasons[test.test_id];
+                  const relevance = Number(test.relevance_score ?? 0).toFixed(1);
+                  const priorityScore = Number(test.priority_score ?? 0).toFixed(1);
+                  const failures = test.historical_failure_count ?? 0;
 
-                    <h4 className="text-base sm:text-lg font-semibold text-slate-900 leading-snug">
-                      {test.description || "Regression verification test case"}
-                    </h4>
-                  </div>
+                  return (
+                    <tr
+                      key={test.test_id}
+                      className="group transition"
+                    >
+                      <td colSpan="8" className="p-0">
+                        {/* Interactive Row Header */}
+                        <div
+                          onClick={() => toggleExpand(test.test_id)}
+                          className={`flex items-center px-4 py-3 cursor-pointer select-none transition ${
+                            isExpanded
+                              ? "bg-indigo-50/40"
+                              : "hover:bg-slate-50/80"
+                          }`}
+                        >
+                          <div className="w-8 shrink-0 text-slate-400 group-hover:text-slate-700">
+                            {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                          </div>
 
-                  {/* Right Column: Horizontally Aligned Metadata + Chevron */}
-                  <div className="flex items-center flex-wrap sm:flex-nowrap gap-4 lg:gap-6 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
-                    {/* Duration */}
-                    <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
-                      <Clock size={16} className="text-slate-400" />
-                      <span>{test.duration} min</span>
-                    </div>
+                          <div className="w-48 sm:w-64 shrink-0 pr-4">
+                            <span className="font-mono font-bold text-indigo-700 mr-2">
+                              {test.test_id}
+                            </span>
+                            <span className="text-slate-800 font-medium truncate inline-block max-w-[140px] sm:max-w-[180px] align-bottom">
+                              {test.description || "Regression verification"}
+                            </span>
+                          </div>
 
-                    {/* Relevance */}
-                    <div className="text-sm font-medium text-slate-600">
-                      <span className="text-slate-400 mr-1 text-xs uppercase font-semibold">Rel:</span>
-                      <span className="font-semibold text-slate-800">{relevance}</span>
-                    </div>
+                          <div className="w-32 shrink-0 pr-4">
+                            <span className="font-mono text-[11px] text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">
+                              {test.module}
+                            </span>
+                          </div>
 
-                    {/* Historical Failures */}
-                    <div className="text-sm font-medium text-slate-600">
-                      <span className="text-slate-400 mr-1 text-xs uppercase font-semibold">Failures:</span>
-                      <span className="font-semibold text-slate-800">{failures}</span>
-                    </div>
+                          <div className="w-24 shrink-0 pr-4">
+                            <PriorityBadge priority={test.priority} />
+                          </div>
 
-                    {/* Priority Score */}
-                    <div className="rounded-md bg-indigo-50 border border-indigo-200/80 px-2.5 py-1 text-xs sm:text-sm font-bold text-indigo-700">
-                      Score {priorityScore}
-                    </div>
+                          <div className="w-24 shrink-0 text-right pr-4 font-mono text-slate-700">
+                            {test.duration} min
+                          </div>
 
-                    {/* Chevron Indicator */}
-                    <div className="text-slate-400 hover:text-indigo-600 transition-colors ml-auto sm:ml-0">
-                      {isExpanded ? (
-                        <ChevronDown size={22} className="text-indigo-600" />
-                      ) : (
-                        <ChevronRight size={22} />
-                      )}
-                    </div>
-                  </div>
-                </button>
+                          <div className="w-24 shrink-0 text-right pr-4 font-mono text-slate-600">
+                            {relevance}
+                          </div>
 
-                {/* Expanded Details Panel */}
-                {isExpanded && (
-                  <div className="border-t border-slate-200/80 bg-slate-50/50 p-5 sm:p-6 transition-all">
-                    {/* Full Metadata Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-lg bg-white border border-slate-200 mb-5">
-                      <div>
-                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-                          Test Identifier
-                        </span>
-                        <span className="font-mono text-sm font-bold text-slate-900">
-                          {test.test_id}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-                          Assigned Module
-                        </span>
-                        <span className="text-sm font-bold text-slate-800 capitalize">
-                          {test.module}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-                          Historical Failures
-                        </span>
-                        <span className="text-sm font-bold text-slate-800">
-                          {failures} detected
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-                          Knapsack Priority
-                        </span>
-                        <span className="text-sm font-bold text-indigo-700">
-                          {priorityScore} pts
-                        </span>
-                      </div>
-                    </div>
+                          <div className="w-24 shrink-0 text-right pr-4 font-mono text-slate-600">
+                            {failures}
+                          </div>
 
-                    {/* WHY SELECTED - Large, comfortable typography */}
-                    <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 p-5">
-                      <div className="flex items-center gap-2 mb-2 text-indigo-900">
-                        <Sparkles size={18} className="text-indigo-600" />
-                        <h5 className="text-sm font-bold uppercase tracking-wider text-indigo-800">
-                          Why Selected
-                        </h5>
-                      </div>
-                      <p className="text-base sm:text-[17px] text-slate-800 leading-relaxed max-w-4xl">
-                        {reason ||
-                          `TC${test.test_id} was selected because of its high payoff index (${priorityScore}) and direct relevance (${relevance}) to the specified change description. Its runtime of ${test.duration} min fits optimally into the execution budget.`}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                          <div className="w-24 shrink-0 text-right font-mono font-bold text-indigo-700">
+                            {priorityScore}
+                          </div>
+                        </div>
+
+                        {/* Expandable Engineering Notes Detail */}
+                        {isExpanded && (
+                          <div className="px-6 py-4 bg-slate-50/70 border-t border-slate-200 text-xs">
+                            <div className="max-w-3xl space-y-2">
+                              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-indigo-700 block">
+                                Selection Rationale
+                              </span>
+                              <p className="text-slate-700 leading-relaxed font-normal">
+                                {reason ||
+                                  `Selected for execution based on high payoff index (${priorityScore}) and relevance (${relevance}) to the specified change description. Duration of ${test.duration} min fits within the remaining execution budget.`}
+                              </p>
+                              <div className="pt-2 flex items-center gap-4 text-[11px] text-slate-500 font-mono">
+                                <span>Module: {test.module}</span>
+                                <span>•</span>
+                                <span>Historical Failures: {failures}</span>
+                                <span>•</span>
+                                <span>Runtime: {test.duration}m</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -184,16 +149,16 @@ function PriorityBadge({ priority }) {
   const styles = {
     High: "text-rose-700 bg-rose-50 border-rose-200",
     Medium: "text-amber-700 bg-amber-50 border-amber-200",
-    Low: "text-slate-700 bg-slate-100 border-slate-200",
+    Low: "text-slate-600 bg-slate-100 border-slate-200",
   };
 
   return (
     <span
-      className={`rounded px-2.5 py-0.5 text-xs sm:text-sm font-semibold border ${
+      className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider border ${
         styles[priority] || styles.Low
       }`}
     >
-      {priority}
+      {priority || "Low"}
     </span>
   );
 }

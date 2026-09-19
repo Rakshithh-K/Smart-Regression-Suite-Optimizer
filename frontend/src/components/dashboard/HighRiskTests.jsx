@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, Clock, ShieldAlert, XCircle } from "lucide-react";
+import { ChevronDown, ChevronRight, AlertTriangle, CheckCircle2 } from "lucide-react";
 
 function HighRiskTests({ tests = [], aiExplanations = {} }) {
   const [expandedId, setExpandedId] = useState(null);
@@ -10,153 +10,143 @@ function HighRiskTests({ tests = [], aiExplanations = {} }) {
   };
 
   return (
-    <section className="space-y-4">
-      {/* Section Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-200 pb-3">
-        <div className="flex items-center gap-2">
-          <AlertTriangle size={20} className="text-amber-500" />
-          <h3 className="text-xl sm:text-2xl font-bold text-slate-900">
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800">
             High-Risk Tests Not Selected
           </h3>
-          {tests.length > 0 ? (
-            <span className="rounded-full bg-amber-50 px-3 py-0.5 text-sm font-bold text-amber-700 border border-amber-200">
-              {tests.length} excluded
-            </span>
-          ) : (
-            <span className="rounded-full bg-emerald-50 px-3 py-0.5 text-sm font-bold text-emerald-700 border border-emerald-200">
-              0 excluded
-            </span>
-          )}
+          <p className="text-xs text-slate-500 mt-0.5">
+            Critical test cases excluded due to execution budget threshold · Click to review risk profile
+          </p>
         </div>
-
-        <p className="text-xs sm:text-sm text-slate-500 font-medium">
-          Critical tests omitted due to time budget limits
-        </p>
+        <span
+          className={`text-xs font-mono font-bold px-2 py-0.5 rounded border ${
+            tests.length > 0
+              ? "text-amber-700 bg-amber-50 border-amber-200"
+              : "text-emerald-700 bg-emerald-50 border-emerald-200"
+          }`}
+        >
+          {tests.length} tests excluded
+        </span>
       </div>
 
       {tests.length === 0 ? (
-        <div className="flex items-center gap-3.5 rounded-xl border border-emerald-200 bg-emerald-50/60 p-5">
-          <CheckCircle2 size={22} className="text-emerald-600 shrink-0" />
-          <div>
-            <h4 className="text-base font-bold text-emerald-900">
-              Zero High-Risk Tests Excluded
-            </h4>
-            <p className="text-sm text-emerald-700 mt-0.5">
-              All high-priority and critical risk tests fit within the allocated execution time window.
-            </p>
-          </div>
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-4 flex items-center gap-2.5 text-xs text-emerald-800">
+          <CheckCircle2 size={15} className="shrink-0 text-emerald-600" />
+          <span>All high-priority and critical risk tests fit within the allocated execution budget.</span>
         </div>
       ) : (
-        <div className="space-y-3">
-          {tests.map((test) => {
-            const isExpanded = expandedId === test.test_id;
-            const reason = reasons[test.test_id];
-            const relevance = Number(test.relevance_score ?? 0).toFixed(1);
-            const failures = test.historical_failure_count ?? 0;
+        <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-500 border-b border-slate-200 font-mono uppercase tracking-wider text-[11px]">
+                <tr>
+                  <th className="py-3 px-4 w-8"></th>
+                  <th className="py-3 px-4 font-bold">Test</th>
+                  <th className="py-3 px-4 font-bold">Module</th>
+                  <th className="py-3 px-4 font-bold">Risk Level</th>
+                  <th className="py-3 px-4 font-bold text-right">Duration</th>
+                  <th className="py-3 px-4 font-bold text-right">Relevance</th>
+                  <th className="py-3 px-4 font-bold text-right">Failures</th>
+                  <th className="py-3 px-4 font-bold text-right">Status</th>
+                </tr>
+              </thead>
 
-            return (
-              <div
-                key={test.test_id}
-                className={`rounded-xl border bg-white transition-all shadow-xs overflow-hidden ${
-                  isExpanded
-                    ? "border-amber-400 ring-2 ring-amber-400/10"
-                    : "border-slate-200 hover:border-amber-300 hover:shadow-sm"
-                }`}
-              >
-                {/* Compact Clickable Row */}
-                <button
-                  type="button"
-                  onClick={() => toggleExpand(test.test_id)}
-                  className="w-full text-left p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer focus:outline-none"
-                  aria-expanded={isExpanded}
-                >
-                  {/* Left Column */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <span className="font-mono text-sm font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded border border-slate-200">
-                        {test.test_id}
-                      </span>
-                      <span className="text-xs sm:text-sm font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded">
-                        {test.module}
-                      </span>
-                      <span className="rounded px-2.5 py-0.5 text-xs sm:text-sm font-semibold border text-rose-700 bg-rose-50 border-rose-200">
-                        High Risk
-                      </span>
-                      <span className="rounded px-2 py-0.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200">
-                        Omitted by Budget
-                      </span>
-                    </div>
+              <tbody className="divide-y divide-slate-100">
+                {tests.map((test) => {
+                  const isExpanded = expandedId === test.test_id;
+                  const reason = reasons[test.test_id];
+                  const relevance = Number(test.relevance_score ?? 0).toFixed(1);
+                  const failures = test.historical_failure_count ?? 0;
 
-                    <h4 className="text-base sm:text-lg font-semibold text-slate-900 leading-snug">
-                      {test.description || "High priority regression verification"}
-                    </h4>
-                  </div>
+                  return (
+                    <tr
+                      key={test.test_id}
+                      className="group transition"
+                    >
+                      <td colSpan="8" className="p-0">
+                        <div
+                          onClick={() => toggleExpand(test.test_id)}
+                          className={`flex items-center px-4 py-3 cursor-pointer select-none transition ${
+                            isExpanded
+                              ? "bg-amber-50/40"
+                              : "hover:bg-slate-50/80"
+                          }`}
+                        >
+                          <div className="w-8 shrink-0 text-slate-400 group-hover:text-slate-700">
+                            {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                          </div>
 
-                  {/* Right Column: Horizontally Aligned Metadata + Chevron */}
-                  <div className="flex items-center flex-wrap sm:flex-nowrap gap-4 lg:gap-6 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
-                    <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
-                      <Clock size={16} className="text-slate-400" />
-                      <span>{test.duration} min</span>
-                    </div>
+                          <div className="w-48 sm:w-64 shrink-0 pr-4">
+                            <span className="font-mono font-bold text-amber-700 mr-2">
+                              {test.test_id}
+                            </span>
+                            <span className="text-slate-800 font-medium truncate inline-block max-w-[140px] sm:max-w-[180px] align-bottom">
+                              {test.description || "Regression verification"}
+                            </span>
+                          </div>
 
-                    <div className="text-sm font-medium text-slate-600">
-                      <span className="text-slate-400 mr-1 text-xs uppercase font-semibold">Rel:</span>
-                      <span className="font-semibold text-slate-800">{relevance}</span>
-                    </div>
+                          <div className="w-32 shrink-0 pr-4">
+                            <span className="font-mono text-[11px] text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">
+                              {test.module}
+                            </span>
+                          </div>
 
-                    <div className="text-sm font-medium text-slate-600">
-                      <span className="text-slate-400 mr-1 text-xs uppercase font-semibold">Failures:</span>
-                      <span className="font-semibold text-rose-600">{failures}</span>
-                    </div>
+                          <div className="w-24 shrink-0 pr-4">
+                            <span className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider border text-rose-700 bg-rose-50 border-rose-200">
+                              High Risk
+                            </span>
+                          </div>
 
-                    <div className="text-slate-400 hover:text-amber-600 transition-colors ml-auto sm:ml-0">
-                      {isExpanded ? (
-                        <ChevronDown size={22} className="text-amber-600" />
-                      ) : (
-                        <ChevronRight size={22} />
-                      )}
-                    </div>
-                  </div>
-                </button>
+                          <div className="w-24 shrink-0 text-right pr-4 font-mono text-slate-700">
+                            {test.duration} min
+                          </div>
 
-                {/* Expanded Details Panel */}
-                {isExpanded && (
-                  <div className="border-t border-slate-200 bg-amber-50/20 p-5 sm:p-6 transition-all space-y-4">
-                    {/* Why Excluded */}
-                    <div className="rounded-lg border border-amber-200 bg-white p-5">
-                      <div className="flex items-center gap-2 mb-2 text-amber-900">
-                        <XCircle size={18} className="text-amber-600" />
-                        <h5 className="text-sm font-bold uppercase tracking-wider text-amber-800">
-                          Why Excluded
-                        </h5>
-                      </div>
-                      <p className="text-base sm:text-[17px] text-slate-800 leading-relaxed max-w-4xl">
-                        {reason ||
-                          `Test duration (${test.duration} min) exceeds remaining runtime capacity in the time budget. Other tests provided a higher marginal score per execution minute.`}
-                      </p>
-                    </div>
+                          <div className="w-24 shrink-0 text-right pr-4 font-mono text-slate-600">
+                            {relevance}
+                          </div>
 
-                    {/* Remaining Risk */}
-                    <div className="flex items-start gap-3 rounded-lg border border-rose-200 bg-rose-50/70 p-5">
-                      <ShieldAlert size={20} className="text-rose-600 shrink-0 mt-0.5" />
-                      <div>
-                        <h5 className="text-sm font-bold uppercase tracking-wider text-rose-800">
-                          Remaining Quality Risk
-                        </h5>
-                        <p className="text-base sm:text-[16px] text-slate-800 leading-relaxed mt-1">
-                          This test validates critical failure modes and has recorded{" "}
-                          <span className="font-bold text-rose-700">{failures} historical failures</span>. Consider scheduling this test in an asynchronous overnight suite or secondary pipeline.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                          <div className="w-24 shrink-0 text-right pr-4 font-mono text-rose-700 font-bold">
+                            {failures}
+                          </div>
+
+                          <div className="w-24 shrink-0 text-right font-mono text-[11px] text-amber-700 font-semibold">
+                            Omitted
+                          </div>
+                        </div>
+
+                        {/* Expandable Engineering Risk Analysis */}
+                        {isExpanded && (
+                          <div className="px-6 py-4 bg-slate-50/70 border-t border-slate-200 text-xs space-y-3">
+                            <div>
+                              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-amber-700 block mb-1">
+                                Exclusion Cause
+                              </span>
+                              <p className="text-slate-700 leading-relaxed font-normal">
+                                {reason ||
+                                  `Test runtime of ${test.duration} min exceeds available knapsack window. Higher marginal payoff test cases were chosen.`}
+                              </p>
+                            </div>
+
+                            <div className="pt-2 border-t border-slate-200 flex items-start gap-2 text-rose-700 font-normal">
+                              <AlertTriangle size={14} className="shrink-0 mt-0.5 text-rose-600" />
+                              <span>
+                                Quality Risk: Test has {failures} historical failures. Consider scheduling for secondary or nightly verification.
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
