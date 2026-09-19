@@ -3,17 +3,12 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
-  LockKeyhole,
-  Mail,
-  User,
-  Cpu,
-  CheckCircle2,
-  ShieldCheck,
   Zap,
+  Users,
+  ShieldCheck,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import srsologinImage from "../assets/srsologin.webp";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
@@ -53,7 +48,7 @@ function Register() {
     } catch (err) {
       setError(
         err.response?.data?.detail ||
-        "Unable to create your account. Please try again."
+          "Unable to create your account. Please try again."
       );
     } finally {
       setLoading(false);
@@ -61,258 +56,209 @@ function Register() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#080b24]">
+    <div className="min-h-screen w-full bg-[#FAFAFA] flex items-center justify-center px-6 py-12 lg:px-12 selection:bg-indigo-100 selection:text-indigo-900">
+      <div className="w-full max-w-[1360px] grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-14 lg:gap-20 items-center">
+        {/* Left Side: Product Value & Editorial Intro */}
+        <div className="flex flex-col justify-center">
+          {/* Brand header */}
+          <div className="flex items-center gap-3 mb-8">
+            <span className="text-lg font-bold tracking-tight text-slate-900 font-mono">
+              SRSO
+            </span>
+            <span className="text-slate-300">•</span>
+            <span className="text-sm font-medium text-slate-500 tracking-wide">
+              Regression Suite Optimizer
+            </span>
+          </div>
 
-      {/* Background */}
-      <img
-        src={srsologinImage}
-        alt=""
-        className="absolute inset-0 h-full w-full object-cover"
-      />
+          <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 font-mono block mb-3">
+            Get Started
+          </span>
 
-      {/* Image overlay */}
-      <div className="absolute inset-0 bg-[#080b24]/65" />
+          <h1 className="text-4xl sm:text-[46px] lg:text-[50px] font-semibold text-slate-900 leading-[1.15] tracking-tight">
+            Create your QA workspace{" "}
+            <span className="text-indigo-600">in minutes.</span>
+          </h1>
 
-      <div className="relative z-10 min-h-screen px-6 py-10 sm:px-10 lg:px-16">
-        <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-[1400px] items-center">
+          <p className="mt-5 text-[17px] sm:text-[18px] text-slate-600 font-normal leading-relaxed max-w-xl">
+            Set up your account and start optimizing your regression suites today.
+          </p>
 
-          <div className="grid w-full grid-cols-1 items-center gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
-
-            {/* LEFT */}
-            <div>
-
-              {/* Brand */}
-              <div className="mb-9 flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-white">
-                  <Cpu size={24} />
-                </div>
-
-                <div>
-                  <div className="text-xl font-semibold text-white">
-                    SRSO Platform
-                  </div>
-
-                  <div className="text-xs font-medium uppercase tracking-[0.18em] text-indigo-200">
-                    Smart Regression Suite Optimizer
-                  </div>
-                </div>
+          {/* Simple Benefit Rows */}
+          <div className="mt-12 space-y-7 max-w-xl">
+            <div className="flex items-start gap-4">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100">
+                <Zap size={18} />
               </div>
-
-              <div className="mb-4 text-xs font-medium uppercase tracking-[0.22em] text-indigo-200">
-                QA Engineering Intelligence
-              </div>
-
-              <h1 className="max-w-2xl text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl">
-                Create your workspace for smarter regression testing.
-              </h1>
-
-              <p className="mt-5 max-w-2xl text-base leading-7 text-slate-200 sm:text-lg">
-                Build an engineering workspace that helps you analyze changes,
-                optimize regression coverage, and understand test-selection
-                trade-offs within a fixed execution window.
-              </p>
-
-              {/* Features */}
-              <div className="mt-8 grid max-w-3xl gap-4 sm:grid-cols-2">
-                <FeatureCard
-                  icon={<Zap size={20} />}
-                  title="Budget-Based Optimization"
-                  description="Fit high-value regression tests into your available execution window."
-                />
-
-                <FeatureCard
-                  icon={<ShieldCheck size={20} />}
-                  title="Risk-Aware Analysis"
-                  description="Use priority and historical failures to identify important regression risks."
-                />
-              </div>
-
-              {/* Status */}
-              <div className="mt-8 flex max-w-3xl flex-wrap justify-between gap-4 border-t border-white/15 pt-5 text-sm text-slate-200">
-                <span className="flex items-center gap-2">
-                  <CheckCircle2 size={17} className="text-emerald-400" />
-                  Optimization Engine v2.4 Active
-                </span>
-
-                <span>FastAPI · Dynamic Programming</span>
-              </div>
-            </div>
-
-            {/* REGISTER CARD */}
-            <div className="flex justify-center lg:justify-end">
-              <div className="w-full max-w-[520px] rounded-2xl border border-white/20 bg-slate-950/40 p-7 shadow-2xl backdrop-blur-md sm:p-9">
-
-                <div className="mb-7">
-                  <p className="mb-2 text-sm text-indigo-200">
-                    Create your engineering workspace
-                  </p>
-
-                  <h2 className="text-3xl font-semibold tracking-tight text-white">
-                    Create QA Account
-                  </h2>
-
-                  <p className="mt-2 text-base leading-6 text-slate-300">
-                    Set up your account to start optimizing regression suites
-                    and reviewing historical test runs.
-                  </p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-
-                  <Input
-                    icon={<User size={19} />}
-                    label="Full Name"
-                    type="text"
-                    value={name}
-                    onChange={setName}
-                    placeholder="Enter your full name"
-                    autoComplete="name"
-                  />
-
-                  <Input
-                    icon={<Mail size={19} />}
-                    label="Work Email Address"
-                    type="email"
-                    value={email}
-                    onChange={setEmail}
-                    placeholder="engineer@company.com"
-                    autoComplete="email"
-                  />
-
-                  <PasswordInput
-                    label="Password"
-                    value={password}
-                    onChange={setPassword}
-                    show={showPassword}
-                    setShow={setShowPassword}
-                    placeholder="Minimum 8 characters"
-                  />
-
-                  <PasswordInput
-                    label="Confirm Password"
-                    value={confirmPassword}
-                    onChange={setConfirmPassword}
-                    show={showConfirmPassword}
-                    setShow={setShowConfirmPassword}
-                    placeholder="Re-enter your password"
-                  />
-
-                  {error && (
-                    <div className="rounded-xl border border-rose-300/30 bg-rose-500/10 p-3 text-sm text-rose-200">
-                      {error}
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3.5 text-base font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {loading ? "Creating Account..." : "Create Account & Continue"}
-                    {!loading && <ArrowRight size={18} />}
-                  </button>
-                </form>
-
-                <p className="mt-7 text-center text-sm text-slate-300">
-                  Already have an account?{" "}
-                  <Link
-                    to="/login"
-                    className="font-medium text-indigo-200 underline underline-offset-2 hover:text-white"
-                  >
-                    Sign in instead
-                  </Link>
+              <div>
+                <h3 className="text-[16px] sm:text-[17px] font-semibold text-slate-900">
+                  Quick setup
+                </h3>
+                <p className="text-[15px] text-slate-500 mt-1 leading-normal font-normal">
+                  Get started quickly.
                 </p>
               </div>
             </div>
 
+            <div className="flex items-start gap-4">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100">
+                <Users size={18} />
+              </div>
+              <div>
+                <h3 className="text-[16px] sm:text-[17px] font-semibold text-slate-900">
+                  Built for QA teams
+                </h3>
+                <p className="text-[15px] text-slate-500 mt-1 leading-normal font-normal">
+                  Optimize regression testing with confidence.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100">
+                <ShieldCheck size={18} />
+              </div>
+              <div>
+                <h3 className="text-[16px] sm:text-[17px] font-semibold text-slate-900">
+                  Secure and private
+                </h3>
+                <p className="text-[15px] text-slate-500 mt-1 leading-normal font-normal">
+                  Your workspace data stays protected.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
 
-/* Reusable normal input */
-function Input({ icon, label, type, value, onChange, placeholder, autoComplete }) {
-  return (
-    <div>
-      <label className="mb-2 block text-sm font-medium text-white">
-        {label}
-      </label>
+        {/* Right Side: Clean White Registration Panel */}
+        <div className="w-full flex justify-center lg:justify-end">
+          <div className="w-full max-w-[480px] rounded-2xl border border-slate-200 bg-white p-8 sm:p-11 shadow-xs">
+            <div className="mb-8">
+              <h2 className="text-[28px] sm:text-[30px] font-semibold tracking-tight text-slate-900">
+                Create your account
+              </h2>
+              <p className="mt-2 text-[15px] sm:text-[16px] text-slate-500 font-normal">
+                Join SRSO and start optimizing your tests.
+              </p>
+            </div>
 
-      <div className="relative">
-        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/85">
-          {icon}
-        </span>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Full Name */}
+              <div>
+                <label className="block text-[15px] font-medium text-slate-700 mb-1.5">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your full name"
+                  autoComplete="name"
+                  className="w-full h-[52px] rounded-xl border border-slate-300 bg-white px-4 text-[16px] text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/15"
+                />
+              </div>
 
-        <input
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          autoComplete={autoComplete}
-          className="w-full rounded-xl border border-white/25 bg-white/10 py-3.5 pl-11 pr-4 text-base text-white outline-none placeholder:text-slate-300/70 focus:border-indigo-400 focus:bg-white/15 focus:ring-2 focus:ring-indigo-400/20"
-        />
-      </div>
-    </div>
-  );
-}
+              {/* Email */}
+              <div>
+                <label className="block text-[15px] font-medium text-slate-700 mb-1.5">
+                  Work Email Address
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="engineer@company.com"
+                  autoComplete="email"
+                  className="w-full h-[52px] rounded-xl border border-slate-300 bg-white px-4 text-[16px] text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/15"
+                />
+              </div>
 
-/* Reusable password input */
-function PasswordInput({
-  label,
-  value,
-  onChange,
-  show,
-  setShow,
-  placeholder,
-}) {
-  return (
-    <div>
-      <label className="mb-2 block text-sm font-medium text-white">
-        {label}
-      </label>
+              {/* Password */}
+              <div>
+                <label className="block text-[15px] font-medium text-slate-700 mb-1.5">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Minimum 8 characters"
+                    autoComplete="new-password"
+                    className="w-full h-[52px] rounded-xl border border-slate-300 bg-white pl-4 pr-12 text-[16px] text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/15"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition p-1"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                  </button>
+                </div>
+              </div>
 
-      <div className="relative">
-        <LockKeyhole
-          size={19}
-          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/90"
-        />
+              {/* Confirm Password */}
+              <div>
+                <label className="block text-[15px] font-medium text-slate-700 mb-1.5">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter your password"
+                    autoComplete="new-password"
+                    className="w-full h-[52px] rounded-xl border border-slate-300 bg-white pl-4 pr-12 text-[16px] text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/15"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition p-1"
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  >
+                    {showConfirmPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                  </button>
+                </div>
+              </div>
 
-        <input
-          type={show ? "text" : "password"}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          autoComplete="new-password"
-          className="w-full rounded-xl border border-white/25 bg-white/10 py-3.5 pl-11 pr-12 text-base text-white outline-none placeholder:text-slate-300/70 focus:border-indigo-400 focus:bg-white/15 focus:ring-2 focus:ring-indigo-400/20"
-        />
+              {/* Error Message */}
+              {error && (
+                <div className="rounded-lg border border-rose-200 bg-rose-50 p-3.5 text-xs font-medium text-rose-700">
+                  {error}
+                </div>
+              )}
 
-        <button
-          type="button"
-          onClick={() => setShow(!show)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white/70 hover:text-white"
-        >
-          {show ? <EyeOff size={19} /> : <Eye size={19} />}
-        </button>
-      </div>
-    </div>
-  );
-}
+              {/* Primary Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full h-[52px] mt-2 inline-flex items-center justify-center gap-2.5 rounded-xl bg-indigo-600 px-6 text-[16px] font-semibold text-white shadow-xs transition hover:bg-indigo-700 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <span>Creating Account...</span>
+                ) : (
+                  <>
+                    <span>Create Account & Continue</span>
+                    <ArrowRight size={17} />
+                  </>
+                )}
+              </button>
+            </form>
 
-/* Feature card */
-function FeatureCard({ icon, title, description }) {
-  return (
-    <div className="flex gap-4 rounded-xl border border-white/20 bg-white/10 p-5 backdrop-blur-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-500/15 text-indigo-300">
-        {icon}
-      </div>
-
-      <div>
-        <h3 className="text-base font-medium text-white">{title}</h3>
-        <p className="mt-1 text-sm leading-6 text-slate-300">
-          {description}
-        </p>
+            {/* Link to Login */}
+            <p className="mt-8 text-center text-[15px] text-slate-500 font-normal">
+              Already have an account?{" "}
+              <Link
+                to="/login"
+                className="font-semibold text-indigo-600 hover:text-indigo-700 transition"
+              >
+                Sign in instead
+              </Link>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

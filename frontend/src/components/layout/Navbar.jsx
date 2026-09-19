@@ -9,24 +9,24 @@ function Navbar({ onMenuClick }) {
   const userInitial = userName.charAt(0).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 w-full shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-8">
+    <header className="sticky top-0 z-30 flex h-[60px] w-full shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6 sm:px-10">
       {/* Left: Mobile Toggle & Product Identity */}
-      <div className="flex items-center gap-3 sm:gap-4">
+      <div className="flex items-center gap-4">
         <button
           type="button"
           onClick={onMenuClick}
-          className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 lg:hidden transition"
+          className="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800 lg:hidden transition"
           aria-label="Toggle navigation menu"
         >
-          <Menu size={18} />
+          <Menu size={20} />
         </button>
 
-        <div className="flex items-center gap-2.5">
-          <span className="text-[15px] font-black tracking-tight text-slate-900 font-mono">
+        <div className="flex items-center gap-3">
+          <span className="text-[16px] font-bold tracking-tight text-slate-900 font-mono">
             SRSO
           </span>
           <span className="text-slate-300 hidden sm:inline">•</span>
-          <span className="hidden sm:inline text-xs font-semibold text-slate-500 tracking-wide">
+          <span className="hidden sm:inline text-[13px] font-medium text-slate-500 tracking-wide">
             Regression Suite Optimizer
           </span>
         </div>
@@ -34,15 +34,15 @@ function Navbar({ onMenuClick }) {
 
       {/* Right: Authenticated User Profile */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 text-sm font-semibold text-white shadow-xs">
             {userInitial}
           </div>
           <div className="hidden sm:block text-left">
-            <span className="text-xs font-bold text-slate-900 block leading-tight">
+            <span className="text-[14px] font-medium text-slate-900 block leading-tight">
               {userName}
             </span>
-            <span className="text-[11px] text-slate-500 block leading-tight font-mono">
+            <span className="text-[13px] text-slate-500 block leading-tight font-mono mt-0.5">
               {userEmail}
             </span>
           </div>

@@ -64,7 +64,7 @@ function Dashboard() {
   };
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-8">
+    <div className="w-full max-w-[1450px] mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-8">
       {/* Editorial Page Header */}
       <WelcomeBanner />
 
@@ -82,8 +82,8 @@ function Dashboard() {
         />
 
         {error && (
-          <div className="mt-3 flex items-center gap-2.5 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-700">
-            <AlertCircle size={16} className="shrink-0 text-rose-600" />
+          <div className="mt-3.5 flex items-center gap-2.5 rounded-lg border border-rose-200 bg-rose-50 p-3.5 text-sm font-medium text-rose-700">
+            <AlertCircle size={18} className="shrink-0 text-rose-600" />
             <span>{error}</span>
           </div>
         )}
@@ -93,16 +93,16 @@ function Dashboard() {
       {result && (
         <section ref={resultRef} className="pt-6 border-t border-slate-200 space-y-8">
           {/* Prominent Result Header */}
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-xs">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-6 sm:p-7 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-xs">
             <div>
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-700 mb-1">
-                <CheckCircle2 size={14} />
+              <div className="inline-flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wider text-emerald-700 mb-1.5">
+                <CheckCircle2 size={16} />
                 Optimization Complete
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
                 Regression Suite Ready for Execution
               </h2>
-              <p className="mt-1 text-xs sm:text-sm text-slate-600 font-normal">
+              <p className="mt-1.5 text-base text-slate-600 font-normal">
                 <strong className="text-emerald-700 font-semibold font-mono">
                   {result.summary?.selected_count ?? 0} tests selected
                 </strong>{" "}
@@ -115,7 +115,7 @@ function Dashboard() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-slate-700 bg-white border border-slate-200 px-3 py-1.5 rounded-md shadow-xs">
+              <span className="text-sm font-mono text-slate-700 bg-white border border-slate-200 px-3.5 py-2 rounded-md shadow-xs">
                 Total Tests Analyzed:{" "}
                 <strong className="text-slate-900">{result.summary?.total_tests ?? 0}</strong>
               </span>
@@ -126,13 +126,13 @@ function Dashboard() {
           <StatsCards result={result} />
 
           {/* Test Case Allocation Section with Tab Switcher */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 space-y-6 shadow-xs">
+          <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-7 space-y-6 shadow-xs">
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
               <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800">
+                <h3 className="text-lg font-semibold text-slate-900">
                   Test Case Allocations
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-sm text-slate-500 mt-1 font-normal">
                   Inspection of selected tests versus budget-omitted high-risk tests.
                 </p>
               </div>
@@ -142,9 +142,9 @@ function Dashboard() {
                 <button
                   type="button"
                   onClick={() => setActiveTab("selected")}
-                  className={`rounded px-3 py-1.5 text-xs font-semibold transition ${
+                  className={`rounded px-3.5 py-1.5 text-sm font-medium transition ${
                     activeTab === "selected"
-                      ? "bg-white text-slate-900 shadow-xs"
+                      ? "bg-white text-slate-900 font-semibold shadow-xs"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -153,9 +153,9 @@ function Dashboard() {
                 <button
                   type="button"
                   onClick={() => setActiveTab("excluded")}
-                  className={`rounded px-3 py-1.5 text-xs font-semibold transition ${
+                  className={`rounded px-3.5 py-1.5 text-sm font-medium transition ${
                     activeTab === "excluded"
-                      ? "bg-white text-amber-700 font-bold shadow-xs"
+                      ? "bg-white text-amber-700 font-semibold shadow-xs"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -164,9 +164,9 @@ function Dashboard() {
                 <button
                   type="button"
                   onClick={() => setActiveTab("all")}
-                  className={`rounded px-3 py-1.5 text-xs font-semibold transition ${
+                  className={`rounded px-3.5 py-1.5 text-sm font-medium transition ${
                     activeTab === "all"
-                      ? "bg-white text-slate-900 shadow-xs"
+                      ? "bg-white text-slate-900 font-semibold shadow-xs"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -198,12 +198,12 @@ function Dashboard() {
           </div>
 
           {/* Suite Coverage Analysis */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
+          <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs">
             <CoverageSection coverage={result.coverage} />
           </div>
 
           {/* Decision Rationale */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs">
+          <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs">
             <AIReasoning explanations={result.ai_explanations} />
           </div>
         </section>
