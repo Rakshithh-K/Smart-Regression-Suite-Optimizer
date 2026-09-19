@@ -11,6 +11,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
+import InputFormat from "./pages/InputFormat";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -67,6 +68,11 @@ function App() {
             <Route
               path="/history"
               element={<History />}
+            />
+
+            <Route
+              path="/input-format"
+              element={<InputFormat />}
             />
 
             <Route

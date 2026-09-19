@@ -10,6 +10,7 @@ import SelectedTestsTable from "../components/dashboard/SelectedTestsTable";
 import HighRiskTests from "../components/dashboard/HighRiskTests";
 import CoverageSection from "../components/dashboard/CoverageSection";
 import AIReasoning from "../components/dashboard/AIReasoning";
+import RegressionRiskDebt from "../components/dashboard/RegressionRiskDebt";
 
 function Dashboard() {
   const [file, setFile] = useState(null);
@@ -50,6 +51,7 @@ function Dashboard() {
 
     try {
       setLoading(true);
+      setResult(null);
       const data = await optimizeRegressionSuite(file, changeDescription, timeBudget);
       setResult(data);
     } catch (err) {
@@ -196,6 +198,9 @@ function Dashboard() {
               </div>
             )}
           </div>
+
+          {/* Regression Risk Debt */}
+          <RegressionRiskDebt riskDebt={result.risk_debt} />
 
           {/* Suite Coverage Analysis */}
           <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-7 shadow-xs">

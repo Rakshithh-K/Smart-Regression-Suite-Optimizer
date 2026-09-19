@@ -44,6 +44,7 @@ def get_history(
         "history": [
             {
                 "id": run.id,
+                "run_number": run.run_number,
                 "change_description": run.change_description,
                 "time_budget": run.time_budget,
                 "total_tests": run.total_tests,
@@ -108,6 +109,7 @@ def get_history_detail(
     return {
         "run": {
             "id": run.id,
+            "run_number": run.run_number,
             "change_description": run.change_description,
             "time_budget": run.time_budget,
             "total_tests": run.total_tests,

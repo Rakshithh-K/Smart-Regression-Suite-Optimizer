@@ -185,12 +185,18 @@ async def optimize(
             0,
         )
 
-        # ----------------------------------------------------
-        # Create history record
-        # ----------------------------------------------------
+        last_run = (
+            db.query(RegressionRun.run_number)
+            .filter(RegressionRun.user_id == user.id)
+            .order_by(RegressionRun.run_number.desc())
+            .first()
+        )
+
+        user_run_number = (last_run[0] + 1) if last_run else 1
 
         run = RegressionRun(
             user_id=user.id,
+            run_number=user_run_number,
             change_description=change_description,
             time_budget=time_budget,
             total_tests=total_tests,
@@ -234,6 +240,7 @@ async def optimize(
 
         return {
             "run_id": run.id,
+            "run_number": run.run_number,
 
             "summary": summary,
 

@@ -74,7 +74,7 @@ function History() {
         <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-7 space-y-5 shadow-xs">
           <div className="flex flex-wrap items-center gap-3">
             <span className="font-mono text-sm font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-md">
-              RUN #{run.id}
+              RUN #{run.run_number ?? run.id}
             </span>
             <span className="text-sm text-slate-500 font-mono">
               {new Date(run.created_at).toLocaleString()}
@@ -132,7 +132,7 @@ function History() {
         <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-7 space-y-4 shadow-xs">
           <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
             <h2 className="text-lg font-semibold text-slate-900">
-              Selected Tests in Run #{run.id}
+              Selected Tests in Run #{run.run_number ?? run.id}
             </h2>
             <span className="text-sm font-mono text-slate-500">
               {tests.length} tests
@@ -272,7 +272,7 @@ function History() {
                       className="group hover:bg-slate-50/80 transition cursor-pointer select-none"
                     >
                       <td className="py-3.5 px-4 font-mono font-semibold text-indigo-700 text-sm sm:text-base">
-                        #{run.id}
+                        #{run.run_number ?? run.id}
                       </td>
 
                       <td className="py-3.5 px-4 font-mono text-slate-500 whitespace-nowrap text-sm">

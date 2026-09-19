@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   History,
+  FileSpreadsheet,
   Settings,
   LogOut,
   X,
@@ -59,6 +60,12 @@ function Sidebar({ open, onClose }) {
               to="/history"
               icon={<History size={19} />}
               label="History"
+              onClick={onClose}
+            />
+            <SidebarLink
+              to="/input-format"
+              icon={<FileSpreadsheet size={19} />}
+              label="Input Format"
               onClick={onClose}
             />
             <SidebarLink

@@ -1,9 +1,9 @@
 from datetime import datetime
-from sqlalchemy import Boolean, DateTime, Integer, String, Text, Float
+from sqlalchemy import Boolean, DateTime, Integer, String, Text, Float, ForeignKey
 from sqlalchemy import (
     Boolean,
     DateTime,
-    Integer,
+    Integer,    
     String,
 )
 
@@ -158,6 +158,7 @@ class RegressionRun(Base):
 
     user_id: Mapped[int] = mapped_column(
         Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
@@ -192,6 +193,11 @@ class RegressionRun(Base):
         default=datetime.utcnow,
         nullable=False,
     )
+    run_number: Mapped[int] = mapped_column(
+    Integer,
+    nullable=False,
+    default=1,
+)
 
 class RegressionResult(Base):
     __tablename__ = "regression_results"
@@ -204,6 +210,7 @@ class RegressionResult(Base):
 
     run_id: Mapped[int] = mapped_column(
         Integer,
+        ForeignKey("regression_runs.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )

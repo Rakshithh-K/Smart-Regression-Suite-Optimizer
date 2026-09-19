@@ -23,15 +23,23 @@ def test_health():
 
 
 def test_optimize():
-    mock_user = type(
-        "MockUser",
-        (),
-        {"id": 1},
-    )()
+    from backend.database import SessionLocal
+    from backend.models import User
+    db = SessionLocal()
+    user = db.query(User).filter(User.email == "test_api@example.com").first()
+    if not user:
+        user = User(
+            name="Test User",
+            email="test_api@example.com",
+            email_verified=True,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
 
     with patch(
         "backend.api.get_current_user",
-        return_value=mock_user,
+        return_value=user,
     ):
 
         with open("data/test_cases.csv", "rb") as file:
