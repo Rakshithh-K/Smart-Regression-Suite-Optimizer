@@ -5,13 +5,17 @@ from src.pipeline import run_pipeline
 
 def test_pipeline_returns_selected_tests():
 
-    result, exclusions, summary, coverage, recommendation, ai_explanations = (
+    result, exclusions, summary, coverage, recommendation, ai_explanations ,risk_debt= (
         run_pipeline(
             "data/test_cases.csv",
             "payment UPI failure",
             time_budget=30,
         )
     )
+
+    assert isinstance(risk_debt, dict)
+    assert "risk_debt_index" in risk_debt
+    assert "high_risk_excluded" in risk_debt    
 
     # Recommendation checks
     assert isinstance(recommendation, dict)

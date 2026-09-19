@@ -8,6 +8,7 @@ from src.coverage_analyzer import analyze_coverage
 from src.recommender import generate_recommendation
 from src.exclusion_analyzer import analyze_exclusions
 from src.ai_explainer import generate_ai_explanations
+from src.risk_debt_analyzer import calculate_risk_debt
 
 
 def run_pipeline(
@@ -17,6 +18,7 @@ def run_pipeline(
 ) -> tuple[
     pd.DataFrame,
     list[dict],
+    dict,
     dict,
     dict,
     dict,
@@ -74,6 +76,11 @@ def run_pipeline(
         change_description,
         time_budget,
     )
+    risk_debt = calculate_risk_debt(
+        excluded_tests=exclusions,
+        #time_budget=time_budget,
+        all_tests=prioritized_df,
+    )
 
     return (
         selected_tests,
@@ -82,4 +89,5 @@ def run_pipeline(
         coverage,
         recommendation,
         ai_explanations,
+        risk_debt,
     )

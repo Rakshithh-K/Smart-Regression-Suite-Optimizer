@@ -154,6 +154,7 @@ async def optimize(
             coverage,
             recommendation,
             ai_explanations,
+            risk_debt,
         ) = run_pipeline(
             temp_path,
             change_description,
@@ -247,6 +248,7 @@ async def optimize(
             "recommendation": recommendation,
 
             "ai_explanations": ai_explanations,
+            "risk_debt": risk_debt,
         }
 
     # --------------------------------------------------------

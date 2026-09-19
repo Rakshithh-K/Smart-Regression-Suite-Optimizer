@@ -32,16 +32,17 @@ def analyze_exclusions(
     for _, row in high_risk_tests.iterrows():
 
         results.append({
-            "test_id": row["test_id"],
-            "module": row["module"],
-            "priority": row["priority"],
-            "duration": int(row["duration"]),
-            "historical_failure_count": int(
-                row["historical_failure_count"]
-            ),
-            "relevance_score": float(
-                row["relevance_score"]
-            ),
-        })
+    "test_id": row["test_id"],
+    "module": row["module"],
+    "priority": row["priority"],
+    "duration": int(row["duration"]),
+    "historical_failure_count": int(
+        row["historical_failure_count"]
+    ),
+    "relevance_score": float(
+        row["relevance_score"]
+    ),
+    "tags": row.get("tags",""),
+})
 
     return results
