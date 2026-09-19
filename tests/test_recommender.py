@@ -14,14 +14,19 @@ def test_generate_recommendation():
     )
 
     coverage = {
-        "module_coverage": {
-            "Payment": 2,
+    "module_coverage": {
+        "Payment": {
+            "total_tests": 3,
+            "selected_tests": 2,
+            "coverage_percentage": 66.67,
+            "status": "Partially Covered",
         },
-        "tag_coverage": {
-            "payment": 2,
-            "upi": 2,
-        },
-    }
+    },
+    "tag_coverage": {
+        "payment": 2,
+        "upi": 2,
+    },
+}
 
     result = generate_recommendation(
         selected_tests,
@@ -50,10 +55,15 @@ def test_invalid_time_budget():
     )
 
     coverage = {
-        "module_coverage": {
-            "Authentication": 1,
-        }
+    "module_coverage": {
+        "Authentication": {
+            "total_tests": 1,
+            "selected_tests": 1,
+            "coverage_percentage": 100.0,
+            "status": "Fully Covered",
+        },
     }
+}
 
     with pytest.raises(ValueError):
 

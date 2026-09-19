@@ -61,6 +61,7 @@ def run_pipeline(
     }
 
     coverage = analyze_coverage(
+        prioritized_df,
         selected_tests,
     )
 

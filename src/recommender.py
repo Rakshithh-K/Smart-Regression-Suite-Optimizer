@@ -38,7 +38,7 @@ def generate_recommendation(
     if module_coverage:
         highest_module = max(
             module_coverage,
-            key=module_coverage.get,
+            key=lambda module: module_coverage[module]["selected_tests"],
         )
 
         recommendations.append(
