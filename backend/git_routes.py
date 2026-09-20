@@ -1,3 +1,4 @@
+import json
 import shutil
 from pathlib import Path
 
@@ -12,9 +13,9 @@ from fastapi import (
 )
 from sqlalchemy.orm import Session
 
-from .session import get_current_user
 from .database import get_db
-from .git_models import GitProject
+from .git_models import GitProject, GitRun
+from .session import get_current_user
 
 
 router = APIRouter(
@@ -54,7 +55,7 @@ async def setup_git_project(
     if default_budget <= 0:
         raise HTTPException(
             status_code=400,
-            detail="Default budget must be greater than 0.",
+            detail="Default budget must be greater than zero.",
         )
 
     if not catalog.filename.lower().endswith(
@@ -133,7 +134,7 @@ def get_git_project(
 
     if not project:
         return {
-            "configured": False,
+            "configured": False
         }
 
     return {
@@ -152,4 +153,121 @@ def get_git_project(
         "catalog_path": (
             project.catalog_path
         ),
+    }
+
+
+@router.get("/runs")
+def get_git_runs(
+    db: Session = Depends(get_db),
+    current_user=Depends(require_current_user),
+):
+    projects = (
+        db.query(GitProject)
+        .filter(
+            GitProject.user_id
+            == current_user.id
+        )
+        .all()
+    )
+
+    project_ids = [
+        project.id
+        for project in projects
+    ]
+
+    if not project_ids:
+        return []
+
+    runs = (
+        db.query(GitRun)
+        .filter(
+            GitRun.git_project_id.in_(
+                project_ids
+            )
+        )
+        .order_by(
+            GitRun.created_at.desc()
+        )
+        .all()
+    )
+
+    return [
+        {
+            "id": run.id,
+            "commit_sha": run.commit_sha,
+            "branch": run.branch,
+            "commit_message": (
+                run.commit_message
+            ),
+            "budget": run.budget,
+            "status": run.status,
+            "created_at": run.created_at,
+        }
+        for run in runs
+    ]
+
+
+@router.get("/runs/{run_id}")
+def get_git_run(
+    run_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_current_user),
+):
+    project = (
+        db.query(GitProject)
+        .filter(
+            GitProject.user_id
+            == current_user.id
+        )
+        .first()
+    )
+
+    if not project:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Git Impact project "
+                "not configured."
+            ),
+        )
+
+    run = (
+        db.query(GitRun)
+        .filter(
+            GitRun.id == run_id,
+            GitRun.git_project_id
+            == project.id,
+        )
+        .first()
+    )
+
+    if not run:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Git Impact run "
+                "not found."
+            ),
+        )
+
+    return {
+        "id": run.id,
+        "commit_sha": run.commit_sha,
+        "branch": run.branch,
+        "commit_message": (
+            run.commit_message
+        ),
+        "changed_files": json.loads(
+            run.changed_files or "[]"
+        ),
+        "change_description": json.loads(
+            run.change_description
+            or "{}"
+        ),
+        "result": json.loads(
+            run.result_json or "{}"
+        ),
+        "budget": run.budget,
+        "status": run.status,
+        "created_at": run.created_at,
     }

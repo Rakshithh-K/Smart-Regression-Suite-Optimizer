@@ -60,6 +60,7 @@ class GitRun(Base):
     commit_message = Column(Text, nullable=True)
     changed_files = Column(Text, nullable=True)
     change_description = Column(Text, nullable=True)
+    result_json = Column(Text, nullable=True)
 
     budget = Column(Integer, nullable=False)
 

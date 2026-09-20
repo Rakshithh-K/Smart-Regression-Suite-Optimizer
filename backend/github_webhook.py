@@ -83,7 +83,7 @@ async def github_webhook(
 
     repository = data.get(
         "repository",
-        {},
+        {}
     )
 
     full_name = repository.get(
@@ -104,11 +104,14 @@ async def github_webhook(
 
     installation = data.get(
         "installation",
-        {},
+        {}
     )
 
     installation_id = str(
-        installation.get("id", "")
+        installation.get(
+            "id",
+            "",
+        )
     )
 
     if not installation_id:
@@ -164,6 +167,7 @@ async def github_webhook(
         )
 
     try:
+        # Get actual changed files and diffs
         changes = get_push_changes(
             owner=owner,
             repo=repo,
@@ -172,6 +176,7 @@ async def github_webhook(
             installation_id=installation_id,
         )
 
+        # Run the Git Impact pipeline
         result = run_git_impact(
             commit_message=commit_message,
             changed_files=changes["files"],
@@ -179,17 +184,45 @@ async def github_webhook(
             time_budget=project.default_budget,
         )
 
+        # Save the complete Git Impact result
         git_run = GitRun(
             git_project_id=project.id,
             commit_sha=after,
             branch=branch,
             commit_message=commit_message,
+
             changed_files=json.dumps(
                 changes["files"]
             ),
+
             change_description=json.dumps(
                 result["change"]
             ),
+
+            result_json=json.dumps({
+                "selected_tests": result[
+                    "selected_tests"
+                ],
+                "exclusions": result[
+                    "exclusions"
+                ],
+                "summary": result[
+                    "summary"
+                ],
+                "coverage": result[
+                    "coverage"
+                ],
+                "recommendation": result[
+                    "recommendation"
+                ],
+                "ai_explanations": result[
+                    "ai_explanations"
+                ],
+                "risk_debt": result[
+                    "risk_debt"
+                ],
+            }),
+
             budget=project.default_budget,
             status="completed",
         )
@@ -213,6 +246,7 @@ async def github_webhook(
     except Exception as error:
         db.rollback()
 
+        # Save failed Git Impact run
         git_run = GitRun(
             git_project_id=project.id,
             commit_sha=after,
@@ -227,5 +261,8 @@ async def github_webhook(
 
         raise HTTPException(
             status_code=500,
-            detail=f"Git Impact processing failed: {error}",
+            detail=(
+                f"Git Impact processing failed: "
+                f"{error}"
+            ),
         )
