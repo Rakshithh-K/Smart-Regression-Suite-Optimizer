@@ -17,27 +17,17 @@ export function downloadExcelTemplate() {
     ]
   ];
 
-  const worksheet = XLSX.utils.json_to_sheet(data, {
-    header: [
-      "test_id",
-      "module",
-      "description",
-      "priority",
-      "duration",
-      "tags",
-      "historical_failure_count",
-    ],
-  });
+  const worksheet = XLSX.utils.aoa_to_sheet(data);
 
   // Set comfortable column widths
   worksheet["!cols"] = [
-    { wch: 12 }, // test_id
-    { wch: 18 }, // module
-    { wch: 42 }, // description
-    { wch: 12 }, // priority
-    { wch: 12 }, // duration
-    { wch: 34 }, // tags
-    { wch: 26 }, // historical_failure_count
+    { wch: 10}, // test_id
+    { wch: 10 }, // module
+    { wch: 10}, // description
+    { wch: 10 }, // priority
+    { wch: 10 }, // duration
+    { wch: 10 }, // tags
+    { wch: 20 }, // historical_failure_count
   ];
 
   const workbook = XLSX.utils.book_new();
