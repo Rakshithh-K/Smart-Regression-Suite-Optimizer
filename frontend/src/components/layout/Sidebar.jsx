@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   History,
+  GitBranch,
   FileSpreadsheet,
   Settings,
   LogOut,
@@ -54,6 +55,12 @@ function Sidebar({ open, onClose }) {
               to="/dashboard"
               icon={<LayoutDashboard size={19} />}
               label="Dashboard"
+              onClick={onClose}
+            />
+            <SidebarLink
+              to="/git-auto"
+              icon={<GitBranch size={19} />}
+              label="Git Auto"
               onClick={onClose}
             />
             <SidebarLink

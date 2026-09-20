@@ -10,6 +10,7 @@ import AppLayout from "./components/layout/AppLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 import Dashboard from "./pages/Dashboard";
+import GitAuto from "./pages/GitAuto";
 import History from "./pages/History";
 import InputFormat from "./pages/InputFormat";
 import Settings from "./pages/Settings";
@@ -63,6 +64,16 @@ function App() {
             <Route
               path="/dashboard"
               element={<Dashboard />}
+            />
+
+            <Route
+              path="/git-auto"
+              element={<GitAuto />}
+            />
+
+            <Route
+              path="/git-auto/runs/:runId"
+              element={<GitAuto />}
             />
 
             <Route

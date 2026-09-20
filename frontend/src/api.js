@@ -27,3 +27,27 @@ export const optimizeRegressionSuite = async (
 
   return response.data;
 };
+
+export const getGitProject = async () => {
+  const response = await api.get("/api/git-impact/project");
+  return response.data;
+};
+
+export const setupGitProject = async (formData) => {
+  const response = await api.post("/api/git-impact/setup", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data;
+};
+
+export const getGitRuns = async () => {
+  const response = await api.get("/api/git-impact/runs");
+  return response.data;
+};
+
+export const getGitRun = async (runId) => {
+  const response = await api.get(`/api/git-impact/runs/${runId}`);
+  return response.data;
+};
