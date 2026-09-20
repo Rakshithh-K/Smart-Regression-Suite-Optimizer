@@ -50,4 +50,9 @@ export const getGitRuns = async () => {
 export const getGitRun = async (runId) => {
   const response = await api.get(`/api/git-impact/runs/${runId}`);
   return response.data;
-};
+};
+
+export const deleteGitRun = async (runId) => {
+  const response = await api.delete(`/api/git-impact/runs/${runId}`);
+  return response.data;
+};

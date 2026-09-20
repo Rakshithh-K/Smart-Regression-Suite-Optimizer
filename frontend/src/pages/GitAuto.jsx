@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 
 import {
   getGitProject,
   getGitRuns,
   getGitRun,
+  deleteGitRun,
 } from "../api";
 
 import GitAutoHeader from "../components/git-auto/GitAutoHeader";
@@ -28,6 +29,7 @@ function GitAuto() {
   const [runDetailLoading, setRunDetailLoading] = useState(false);
 
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState(null);
   const [runDetailError, setRunDetailError] = useState("");
   const [isEditingConfig, setIsEditingConfig] = useState(false);
 
@@ -147,6 +149,25 @@ function GitAuto() {
     loadProject();
   };
 
+  const handleDeleteRun = async (runIdToDelete) => {
+    try {
+      await deleteGitRun(runIdToDelete);
+      setRuns((prev) => prev.filter((r) => r.id !== runIdToDelete));
+      if (latestRunDetail?.id === runIdToDelete) {
+        setLatestRunDetail(null);
+      }
+      setSuccessMessage(`Run #${runIdToDelete} deleted successfully.`);
+      setError("");
+      setTimeout(() => setSuccessMessage(null), 4000);
+      return { success: true };
+    } catch (err) {
+      const errMsg =
+        err.response?.data?.detail || "Failed to delete Git Auto run.";
+      setError(errMsg);
+      return { success: false, error: errMsg };
+    }
+  };
+
   // Run Detail Route: /git-auto/runs/:runId
   if (runId) {
     if (runDetailLoading || (!selectedRunData && !runDetailError)) {
@@ -243,6 +264,13 @@ function GitAuto() {
         </div>
       )}
 
+      {successMessage && (
+        <div className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-700">
+          <CheckCircle2 size={18} className="shrink-0 text-emerald-600" />
+          <span>{successMessage}</span>
+        </div>
+      )}
+
       {/* Latest Git Run Card (shown when at least one run exists) */}
       {latestRun && (
         <section>
@@ -265,6 +293,7 @@ function GitAuto() {
           <GitAutoHistoryTable
             runs={runs}
             onViewRun={handleViewRun}
+            onDeleteRun={handleDeleteRun}
             onRefresh={loadRuns}
           />
         )}

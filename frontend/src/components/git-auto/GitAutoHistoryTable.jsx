@@ -9,12 +9,17 @@ import {
   ChevronRight,
   GitCommit,
   Search,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 
-function GitAutoHistoryTable({ runs = [], onViewRun, onRefresh }) {
+function GitAutoHistoryTable({ runs = [], onViewRun, onDeleteRun, onRefresh }) {
   const [copiedId, setCopiedId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [runToDelete, setRunToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
   const handleCopy = (e, sha) => {
     e.stopPropagation();
@@ -219,17 +224,34 @@ function GitAutoHistoryTable({ runs = [], onViewRun, onRefresh }) {
 
                         {/* Action */}
                         <td className="py-4 px-4 text-right">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onViewRun(run.id);
-                            }}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition shadow-xs cursor-pointer"
-                          >
-                            <span>View</span>
-                            <ChevronRight size={14} />
-                          </button>
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onViewRun(run.id);
+                              }}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition shadow-xs cursor-pointer"
+                            >
+                              <span>View</span>
+                              <ChevronRight size={14} />
+                            </button>
+                            {onDeleteRun && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setRunToDelete(run);
+                                  setDeleteError(null);
+                                }}
+                                title="Delete run"
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition shadow-xs cursor-pointer"
+                              >
+                                <Trash2 size={14} />
+                                <span>Delete</span>
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -294,12 +316,85 @@ function GitAutoHistoryTable({ runs = [], onViewRun, onRefresh }) {
                           })
                         : "—"}
                     </span>
+                    {onDeleteRun && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRunToDelete(run);
+                          setDeleteError(null);
+                        }}
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition cursor-pointer"
+                      >
+                        <Trash2 size={13} />
+                        <span>Delete</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               );
             })}
           </div>
         </>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {runToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-lg max-w-md w-full space-y-4">
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-slate-900">
+                Delete Run #{runToDelete.id}?
+              </h3>
+              <p className="text-sm text-slate-600 font-normal">
+                This will permanently remove this Git Auto run and its stored results.
+              </p>
+            </div>
+
+            {deleteError && (
+              <div className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-700">
+                <AlertCircle size={15} className="shrink-0 text-rose-600" />
+                <span>{deleteError}</span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => {
+                  if (!isDeleting) {
+                    setRunToDelete(null);
+                    setDeleteError(null);
+                  }
+                }}
+                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={async () => {
+                  if (!onDeleteRun) return;
+                  setIsDeleting(true);
+                  setDeleteError(null);
+                  const res = await onDeleteRun(runToDelete.id);
+                  setIsDeleting(false);
+                  if (res?.success) {
+                    setRunToDelete(null);
+                  } else {
+                    setDeleteError(res?.error || "Failed to delete run.");
+                  }
+                }}
+                className="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 transition shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                {isDeleting && <Loader2 size={14} className="animate-spin" />}
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

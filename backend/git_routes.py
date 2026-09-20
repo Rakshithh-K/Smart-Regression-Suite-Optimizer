@@ -293,3 +293,59 @@ def get_git_run(
         "status": run.status,
         "created_at": run.created_at,
     }
+
+
+@router.delete("/runs/{run_id}")
+def delete_git_run(
+    run_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_current_user),
+):
+    projects = (
+        db.query(GitProject)
+        .filter(
+            GitProject.user_id
+            == current_user.id
+        )
+        .all()
+    )
+
+    project_ids = [
+        project.id
+        for project in projects
+    ]
+
+    if not project_ids:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Git Impact run not found."
+            ),
+        )
+
+    run = (
+        db.query(GitRun)
+        .filter(
+            GitRun.id == run_id,
+            GitRun.git_project_id.in_(
+                project_ids
+            ),
+        )
+        .first()
+    )
+
+    if not run:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Git Impact run not found."
+            ),
+        )
+
+    db.delete(run)
+    db.commit()
+
+    return {
+        "message": "Git Impact run deleted successfully",
+        "id": run_id,
+    }
