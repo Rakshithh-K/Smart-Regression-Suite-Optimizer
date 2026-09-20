@@ -1,9 +1,21 @@
 import hashlib
 import hmac
+import json
 import os
 
-from fastapi import APIRouter, Header, HTTPException, Request
+from fastapi import (
+    APIRouter,
+    Depends,
+    Header,
+    HTTPException,
+    Request,
+)
+from sqlalchemy.orm import Session
 
+from src.git_impact_service import run_git_impact
+
+from .database import get_db
+from .git_models import GitProject, GitRun
 from .github_client import get_push_changes
 
 
@@ -17,16 +29,21 @@ def verify_github_signature(
     payload: bytes,
     signature: str | None,
 ) -> bool:
-    secret = os.getenv("GITHUB_WEBHOOK_SECRET")
+    secret = os.getenv(
+        "GITHUB_WEBHOOK_SECRET"
+    )
 
     if not secret or not signature:
         return False
 
-    expected = "sha256=" + hmac.new(
-        secret.encode(),
-        payload,
-        hashlib.sha256,
-    ).hexdigest()
+    expected = (
+        "sha256="
+        + hmac.new(
+            secret.encode(),
+            payload,
+            hashlib.sha256,
+        ).hexdigest()
+    )
 
     return hmac.compare_digest(
         expected,
@@ -37,8 +54,13 @@ def verify_github_signature(
 @router.post("/webhook")
 async def github_webhook(
     request: Request,
-    x_hub_signature_256: str | None = Header(default=None),
-    x_github_event: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+    x_hub_signature_256: str | None = Header(
+        default=None
+    ),
+    x_github_event: str | None = Header(
+        default=None
+    ),
 ):
     payload = await request.body()
 
@@ -57,11 +79,17 @@ async def github_webhook(
             "event": x_github_event,
         }
 
-    data = await request.json()
+    data = json.loads(payload)
 
-    repository = data.get("repository", {})
+    repository = data.get(
+        "repository",
+        {},
+    )
 
-    full_name = repository.get("full_name", "")
+    full_name = repository.get(
+        "full_name",
+        "",
+    )
 
     if "/" not in full_name:
         raise HTTPException(
@@ -69,25 +97,135 @@ async def github_webhook(
             detail="Invalid repository information.",
         )
 
-    owner, repo = full_name.split("/", 1)
+    owner, repo = full_name.split(
+        "/",
+        1,
+    )
+
+    installation = data.get(
+        "installation",
+        {},
+    )
+
+    installation_id = str(
+        installation.get("id", "")
+    )
+
+    if not installation_id:
+        raise HTTPException(
+            status_code=400,
+            detail="GitHub installation ID is missing.",
+        )
+
+    project = (
+        db.query(GitProject)
+        .filter(
+            GitProject.repo_owner == owner,
+            GitProject.repo_name == repo,
+            GitProject.installation_id
+            == installation_id,
+        )
+        .first()
+    )
+
+    if not project:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "No Git Impact project is "
+                "configured for this repository."
+            ),
+        )
 
     before = data.get("before")
     after = data.get("after")
 
-    changes = get_push_changes(
-        owner=owner,
-        repo=repo,
-        before=before,
-        after=after,
+    commit = data.get(
+        "head_commit"
+    ) or {}
+
+    commit_message = commit.get(
+        "message",
+        "",
     )
 
-    return {
-        "status": "received",
-        "event": "push",
-        "repository": full_name,
-        "commit_sha": after,
-        "commit_message": (
-            data.get("head_commit", {}).get("message")
-        ),
-        "changes": changes,
-    }
+    branch = data.get(
+        "ref",
+        "",
+    ).replace(
+        "refs/heads/",
+        "",
+    )
+
+    if not before or not after:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid push commit range.",
+        )
+
+    try:
+        changes = get_push_changes(
+            owner=owner,
+            repo=repo,
+            before=before,
+            after=after,
+            installation_id=installation_id,
+        )
+
+        result = run_git_impact(
+            commit_message=commit_message,
+            changed_files=changes["files"],
+            test_catalog_path=project.catalog_path,
+            time_budget=project.default_budget,
+        )
+
+        git_run = GitRun(
+            git_project_id=project.id,
+            commit_sha=after,
+            branch=branch,
+            commit_message=commit_message,
+            changed_files=json.dumps(
+                changes["files"]
+            ),
+            change_description=json.dumps(
+                result["change"]
+            ),
+            budget=project.default_budget,
+            status="completed",
+        )
+
+        db.add(git_run)
+        db.commit()
+        db.refresh(git_run)
+
+        return {
+            "status": "completed",
+            "git_run_id": git_run.id,
+            "repository": full_name,
+            "commit_sha": after,
+            "branch": branch,
+            "change": result["change"],
+            "summary": result["summary"],
+            "coverage": result["coverage"],
+            "risk_debt": result["risk_debt"],
+        }
+
+    except Exception as error:
+        db.rollback()
+
+        git_run = GitRun(
+            git_project_id=project.id,
+            commit_sha=after,
+            branch=branch,
+            commit_message=commit_message,
+            budget=project.default_budget,
+            status="failed",
+        )
+
+        db.add(git_run)
+        db.commit()
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Git Impact processing failed: {error}",
+        )

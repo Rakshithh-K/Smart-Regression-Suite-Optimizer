@@ -4,3 +4,5 @@ __pycache__/
 .pytest_cache/
 .env
  backend/secrets/
+backend/secrets/
+data/git_projects/

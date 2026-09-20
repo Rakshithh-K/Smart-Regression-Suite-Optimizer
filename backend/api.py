@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .github_webhook import router as github_webhook_router
 from sqlalchemy.orm import Session
 from . import git_models
+from .git_routes import router as git_router
 import tempfile
 import os
 
@@ -76,6 +77,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(history_router)
 app.include_router(github_webhook_router)
+app.include_router(git_router)
 
 # ============================================================
 # Root endpoint
