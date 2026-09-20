@@ -184,6 +184,44 @@ async def github_webhook(
             time_budget=project.default_budget,
         )
 
+        if not result or not isinstance(result, dict):
+            raise ValueError(
+                "Git Impact pipeline returned invalid or empty result."
+            )
+
+        result_payload = {
+            "selected_tests": result.get(
+                "selected_tests", []
+            ),
+            "exclusions": result.get(
+                "exclusions", []
+            ),
+            "summary": result.get(
+                "summary", {}
+            ),
+            "coverage": result.get(
+                "coverage", {}
+            ),
+            "recommendation": result.get(
+                "recommendation", {}
+            ),
+            "ai_explanations": result.get(
+                "ai_explanations", {}
+            ),
+            "risk_debt": result.get(
+                "risk_debt", {}
+            ),
+        }
+
+        serialized_result = json.dumps(
+            result_payload
+        )
+
+        if not serialized_result:
+            raise ValueError(
+                "Failed to serialize Git Impact result."
+            )
+
         # Save the complete Git Impact result
         git_run = GitRun(
             git_project_id=project.id,
@@ -192,36 +230,14 @@ async def github_webhook(
             commit_message=commit_message,
 
             changed_files=json.dumps(
-                changes["files"]
+                changes.get("files", [])
             ),
 
             change_description=json.dumps(
-                result["change"]
+                result.get("change", {})
             ),
 
-            result_json=json.dumps({
-                "selected_tests": result[
-                    "selected_tests"
-                ],
-                "exclusions": result[
-                    "exclusions"
-                ],
-                "summary": result[
-                    "summary"
-                ],
-                "coverage": result[
-                    "coverage"
-                ],
-                "recommendation": result[
-                    "recommendation"
-                ],
-                "ai_explanations": result[
-                    "ai_explanations"
-                ],
-                "risk_debt": result[
-                    "risk_debt"
-                ],
-            }),
+            result_json=serialized_result,
 
             budget=project.default_budget,
             status="completed",

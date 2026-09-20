@@ -797,11 +797,14 @@ function GitRunDetails({ runData, onBack }) {
                 <span className="text-xs text-slate-500 block mb-1 font-medium">Uncovered Modules</span>
                 {Array.isArray(coverage.uncovered_modules) && coverage.uncovered_modules.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5">
-                    {coverage.uncovered_modules.map((m, i) => (
-                      <span key={i} className="font-medium text-xs text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
-                        {m}
-                      </span>
-                    ))}
+                    {coverage.uncovered_modules.map((m, i) => {
+                      const modName = typeof m === "object" && m !== null ? m.name || m.module || String(m) : String(m);
+                      return (
+                        <span key={i} className="font-medium text-xs text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                          {modName}
+                        </span>
+                      );
+                    })}
                   </div>
                 ) : (
                   <span className="text-emerald-700 font-medium text-sm">None</span>
@@ -812,11 +815,14 @@ function GitRunDetails({ runData, onBack }) {
                 <span className="text-xs text-slate-500 block mb-1 font-medium">Uncovered Tests</span>
                 {Array.isArray(coverage.uncovered_tests) && coverage.uncovered_tests.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5">
-                    {coverage.uncovered_tests.slice(0, 8).map((t, i) => (
-                      <span key={i} className="font-mono text-xs text-slate-800 bg-white border border-slate-200 px-2 py-0.5 rounded">
-                        {t}
-                      </span>
-                    ))}
+                    {coverage.uncovered_tests.slice(0, 8).map((t, i) => {
+                      const testId = typeof t === "object" && t !== null ? t.test_id || t.name || String(t) : String(t);
+                      return (
+                        <span key={i} className="font-mono text-xs text-slate-800 bg-white border border-slate-200 px-2 py-0.5 rounded">
+                          {testId}
+                        </span>
+                      );
+                    })}
                     {coverage.uncovered_tests.length > 8 && (
                       <span className="text-slate-500 text-xs font-medium">+{coverage.uncovered_tests.length - 8} more</span>
                     )}
@@ -830,11 +836,14 @@ function GitRunDetails({ runData, onBack }) {
                 <span className="text-xs text-slate-500 block mb-1 font-medium">High-Risk Uncovered Tests</span>
                 {Array.isArray(coverage.high_risk_uncovered_tests) && coverage.high_risk_uncovered_tests.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5">
-                    {coverage.high_risk_uncovered_tests.map((t, i) => (
-                      <span key={i} className="font-mono text-xs text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
-                        {t}
-                      </span>
-                    ))}
+                    {coverage.high_risk_uncovered_tests.map((t, i) => {
+                      const testId = typeof t === "object" && t !== null ? t.test_id || t.name || String(t) : String(t);
+                      return (
+                        <span key={i} className="font-mono text-xs text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
+                          {testId}
+                        </span>
+                      );
+                    })}
                   </div>
                 ) : (
                   <span className="text-emerald-700 font-medium text-sm">0 tests</span>
@@ -850,15 +859,21 @@ function GitRunDetails({ runData, onBack }) {
                 Tag Coverage
               </span>
               <div className="flex flex-wrap gap-2">
-                {Object.entries(coverage.tag_coverage).map(([tag, tData]) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 border border-slate-200 px-3 py-1 text-xs font-medium text-slate-700"
-                  >
-                    <span className="font-semibold text-slate-900">{tag}:</span>
-                    <span>{tData.selected_tests}/{tData.total_tests}</span>
-                  </span>
-                ))}
+                {Object.entries(coverage.tag_coverage).map(([tag, tData]) => {
+                  const displayValue = typeof tData === "object" && tData !== null
+                    ? `${tData.selected_tests ?? 0}/${tData.total_tests ?? 0}`
+                    : tData;
+
+                  return (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 border border-slate-200 px-3 py-1 text-xs font-medium text-slate-700"
+                    >
+                      <span className="font-semibold text-slate-900">{tag}:</span>
+                      <span>{displayValue}</span>
+                    </span>
+                  );
+                })}
               </div>
             </div>
           )}

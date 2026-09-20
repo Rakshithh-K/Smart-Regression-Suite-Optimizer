@@ -92,23 +92,39 @@ async def setup_git_project(
             file,
         )
 
-    project = GitProject(
-        user_id=current_user.id,
-        repo_owner=repo_owner,
-        repo_name=repo_name,
-        installation_id=installation_id,
-        default_budget=default_budget,
-        catalog_path=str(catalog_path),
+    existing_project = (
+        db.query(GitProject)
+        .filter(
+            GitProject.user_id == current_user.id,
+            GitProject.repo_owner == repo_owner,
+            GitProject.repo_name == repo_name,
+        )
+        .first()
     )
 
-    db.add(project)
+    if existing_project:
+        existing_project.installation_id = installation_id
+        existing_project.default_budget = default_budget
+        existing_project.catalog_path = str(catalog_path)
+        project = existing_project
+    else:
+        project = GitProject(
+            user_id=current_user.id,
+            repo_owner=repo_owner,
+            repo_name=repo_name,
+            installation_id=installation_id,
+            default_budget=default_budget,
+            catalog_path=str(catalog_path),
+        )
+        db.add(project)
+
     db.commit()
     db.refresh(project)
 
     return {
         "message": (
             "Git Impact project "
-            "created successfully."
+            "configured successfully."
         ),
         "project_id": project.id,
         "repository": (
@@ -213,16 +229,21 @@ def get_git_run(
     db: Session = Depends(get_db),
     current_user=Depends(require_current_user),
 ):
-    project = (
+    projects = (
         db.query(GitProject)
         .filter(
             GitProject.user_id
             == current_user.id
         )
-        .first()
+        .all()
     )
 
-    if not project:
+    project_ids = [
+        project.id
+        for project in projects
+    ]
+
+    if not project_ids:
         raise HTTPException(
             status_code=404,
             detail=(
@@ -235,8 +256,9 @@ def get_git_run(
         db.query(GitRun)
         .filter(
             GitRun.id == run_id,
-            GitRun.git_project_id
-            == project.id,
+            GitRun.git_project_id.in_(
+                project_ids
+            ),
         )
         .first()
     )

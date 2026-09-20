@@ -28,6 +28,7 @@ function GitAuto() {
   const [runDetailLoading, setRunDetailLoading] = useState(false);
 
   const [error, setError] = useState("");
+  const [runDetailError, setRunDetailError] = useState("");
   const [isEditingConfig, setIsEditingConfig] = useState(false);
 
   // Load Git Auto runs
@@ -79,15 +80,16 @@ function GitAuto() {
   const loadRunDetail = useCallback(async (id) => {
     try {
       setRunDetailLoading(true);
-      setError("");
+      setRunDetailError("");
       const detail = await getGitRun(id);
       setSelectedRunData(detail);
     } catch (err) {
       console.error("Failed to load Git Auto run details:", err);
-      setError(
+      setRunDetailError(
         err.response?.data?.detail ||
-          `Unable to load details for run #${id}. Please try again.`
+          `Run #${id} could not be loaded.`
       );
+      setSelectedRunData(null);
     } finally {
       setRunDetailLoading(false);
     }
@@ -118,7 +120,12 @@ function GitAuto() {
       };
       fetchDetail();
     } else {
-      setSelectedRunData(null);
+      queueMicrotask(() => {
+        if (isMounted) {
+          setSelectedRunData(null);
+          setRunDetailError("");
+        }
+      });
     }
     return () => {
       isMounted = false;
@@ -131,6 +138,7 @@ function GitAuto() {
 
   const handleBackToOverview = () => {
     setSelectedRunData(null);
+    setRunDetailError("");
     navigate("/git-auto");
   };
 
@@ -139,7 +147,62 @@ function GitAuto() {
     loadProject();
   };
 
-  // Full page initial loading state
+  // Run Detail Route: /git-auto/runs/:runId
+  if (runId) {
+    if (runDetailLoading || (!selectedRunData && !runDetailError)) {
+      return (
+        <div className="w-full max-w-[1450px] mx-auto px-4 sm:px-8 py-20 flex flex-col items-center justify-center gap-3 text-slate-500">
+          <Loader2 size={24} className="animate-spin text-indigo-600" />
+          <span className="text-sm font-semibold">Retrieving Git Auto run analysis...</span>
+        </div>
+      );
+    }
+
+    if (runDetailError || !selectedRunData) {
+      return (
+        <div className="w-full max-w-[1450px] mx-auto px-4 sm:px-8 py-10 sm:py-16">
+          <div className="rounded-xl border border-rose-200 bg-white p-8 sm:p-10 shadow-xs max-w-xl mx-auto text-center space-y-4">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-50 text-rose-600 border border-rose-200">
+              <AlertCircle size={24} />
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-xl font-bold text-slate-900">
+                Unable to load Git Auto run
+              </h2>
+              <p className="text-sm text-slate-600 font-normal">
+                Run #{runId} could not be loaded.
+              </p>
+              {runDetailError && runDetailError !== `Run #${runId} could not be loaded.` && (
+                <p className="text-xs text-rose-600 font-medium pt-1">
+                  {runDetailError}
+                </p>
+              )}
+            </div>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={handleBackToOverview}
+                className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition shadow-xs cursor-pointer"
+              >
+                Back to Git Auto
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="w-full max-w-[1450px] mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6">
+        <GitRunDetails
+          runData={selectedRunData}
+          onBack={handleBackToOverview}
+        />
+      </div>
+    );
+  }
+
+  // Full page initial loading state for overview
   if (loading) {
     return (
       <div className="w-full max-w-[1450px] mx-auto px-4 sm:px-8 py-20 flex flex-col items-center justify-center gap-3 text-slate-500">
@@ -157,34 +220,6 @@ function GitAuto() {
           project={project}
           onSetupSuccess={handleSetupSuccess}
           onCancel={project?.configured ? () => setIsEditingConfig(false) : null}
-        />
-      </div>
-    );
-  }
-
-  // Detail View for a specific run
-  if (runDetailLoading) {
-    return (
-      <div className="w-full max-w-[1450px] mx-auto px-4 sm:px-8 py-20 flex flex-col items-center justify-center gap-3 text-slate-500">
-        <Loader2 size={24} className="animate-spin text-indigo-600" />
-        <span className="text-sm font-semibold">Retrieving Git Auto run analysis...</span>
-      </div>
-    );
-  }
-
-  if (selectedRunData) {
-    return (
-      <div className="w-full max-w-[1450px] mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6">
-        {error && (
-          <div className="flex items-center gap-2.5 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-700">
-            <AlertCircle size={18} className="shrink-0 text-rose-600" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        <GitRunDetails
-          runData={selectedRunData}
-          onBack={handleBackToOverview}
         />
       </div>
     );
