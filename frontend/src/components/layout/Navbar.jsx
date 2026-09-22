@@ -22,11 +22,11 @@ function Navbar({ onMenuClick }) {
         </button>
 
         <div className="flex items-center gap-3">
-          <span className="text-[16px] font-bold tracking-tight text-slate-900 font-mono">
+          <span className="text-[20px] font-bold tracking-tight text-slate-900 font-mono">
             SRSO
           </span>
           <span className="text-slate-300 hidden sm:inline">•</span>
-          <span className="hidden sm:inline text-[13px] font-medium text-slate-500 tracking-wide">
+          <span className="hidden sm:inline text-[15px] font-medium text-slate-500 tracking-wide">
             Regression Suite Optimizer
           </span>
         </div>

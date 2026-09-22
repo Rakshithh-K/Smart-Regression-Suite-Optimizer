@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 function SelectedTestsTable({ tests = [], recommendation = {}, aiExplanations = {} }) {
@@ -57,63 +57,72 @@ function SelectedTestsTable({ tests = [], recommendation = {}, aiExplanations = 
                   const failures = test.historical_failure_count ?? 0;
 
                   return (
-                    <tr
-                      key={test.test_id}
-                      className="group transition"
-                    >
-                      <td colSpan="8" className="p-0">
-                        {/* Interactive Row Header */}
-                        <div
-                          onClick={() => toggleExpand(test.test_id)}
-                          className={`flex items-center px-4 py-3.5 cursor-pointer select-none transition ${
-                            isExpanded
-                              ? "bg-indigo-50/40"
-                              : "hover:bg-slate-50/80"
-                          }`}
-                        >
-                          <div className="w-8 shrink-0 text-slate-400 group-hover:text-slate-700">
-                            {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                          </div>
+                    <Fragment key={test.test_id}>
+                      <tr
+                        onClick={() => toggleExpand(test.test_id)}
+                        className={`group transition cursor-pointer select-none ${
+                          isExpanded
+                            ? "bg-indigo-50/40"
+                            : "hover:bg-slate-50/80"
+                        }`}
+                      >
+                        {/* 1. Expand icon */}
+                        <td className="py-3.5 px-4 w-8 text-slate-400 group-hover:text-slate-700">
+                          {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        </td>
 
-                          <div className="w-52 sm:w-72 shrink-0 pr-4">
-                            <span className="font-mono font-semibold text-indigo-700 mr-2 text-sm sm:text-base">
+                        {/* 2. Test */}
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center">
+                            <span className="font-mono font-semibold text-indigo-700 mr-2 text-sm sm:text-base shrink-0">
                               {test.test_id}
                             </span>
-                            <span className="text-slate-800 font-medium truncate inline-block max-w-[140px] sm:max-w-[200px] align-bottom text-sm">
+                            <span
+                              className="text-slate-800 font-medium truncate inline-block max-w-[140px] sm:max-w-[200px] align-bottom text-sm"
+                              title={test.description}
+                            >
                               {test.description || "Regression verification"}
                             </span>
                           </div>
+                        </td>
 
-                          <div className="w-36 shrink-0 pr-4">
-                            <span className="font-mono text-xs sm:text-sm text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-md">
-                              {test.module}
-                            </span>
-                          </div>
+                        {/* 3. Module */}
+                        <td className="py-3.5 px-4">
+                          <span className="font-mono text-xs sm:text-sm text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-md inline-block">
+                            {test.module}
+                          </span>
+                        </td>
 
-                          <div className="w-28 shrink-0 pr-4">
-                            <PriorityBadge priority={test.priority} />
-                          </div>
+                        {/* 4. Priority */}
+                        <td className="py-3.5 px-4">
+                          <PriorityBadge priority={test.priority} />
+                        </td>
 
-                          <div className="w-24 shrink-0 text-right pr-4 font-mono text-slate-700 text-sm">
-                            {test.duration} min
-                          </div>
+                        {/* 5. Duration */}
+                        <td className="py-3.5 px-4 text-right font-mono text-slate-700 text-sm whitespace-nowrap">
+                          {test.duration} min
+                        </td>
 
-                          <div className="w-24 shrink-0 text-right pr-4 font-mono text-slate-600 text-sm">
-                            {relevance}
-                          </div>
+                        {/* 6. Relevance */}
+                        <td className="py-3.5 px-4 text-right font-mono text-slate-600 text-sm whitespace-nowrap">
+                          {relevance}
+                        </td>
 
-                          <div className="w-24 shrink-0 text-right pr-4 font-mono text-slate-600 text-sm">
-                            {failures}
-                          </div>
+                        {/* 7. Failures */}
+                        <td className="py-3.5 px-4 text-right font-mono text-slate-600 text-sm whitespace-nowrap">
+                          {failures}
+                        </td>
 
-                          <div className="w-24 shrink-0 text-right font-mono font-semibold text-indigo-700 text-sm sm:text-base">
-                            {priorityScore}
-                          </div>
-                        </div>
+                        {/* 8. Score */}
+                        <td className="py-3.5 px-4 text-right font-mono font-semibold text-indigo-700 text-sm sm:text-base whitespace-nowrap">
+                          {priorityScore}
+                        </td>
+                      </tr>
 
-                        {/* Expandable Engineering Notes Detail */}
-                        {isExpanded && (
-                          <div className="px-6 py-4 bg-slate-50/70 border-t border-slate-200 text-sm">
+                      {/* Expandable Engineering Notes Detail */}
+                      {isExpanded && (
+                        <tr className="bg-slate-50/70 border-t border-slate-200">
+                          <td colSpan="8" className="px-6 py-4 text-sm">
                             <div className="max-w-3xl space-y-2">
                               <span className="text-xs sm:text-sm font-mono font-semibold uppercase tracking-wider text-indigo-700 block">
                                 Selection Rationale
@@ -130,10 +139,10 @@ function SelectedTestsTable({ tests = [], recommendation = {}, aiExplanations = 
                                 <span>Runtime: {test.duration}m</span>
                               </div>
                             </div>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   );
                 })}
               </tbody>

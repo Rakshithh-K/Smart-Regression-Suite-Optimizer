@@ -55,11 +55,11 @@ function Login() {
         <div className="flex flex-col justify-center">
           {/* Brand header */}
           <div className="flex items-center gap-3 mb-8">
-            <span className="text-lg font-bold tracking-tight text-slate-900 font-mono">
+            <span className="lg:text-[50px] font-bold tracking-tight text-slate-900 font-mono">
               SRSO
             </span>
             <span className="text-slate-300">•</span>
-            <span className="text-sm font-medium text-slate-500 tracking-wide">
+            <span className="lg:text-[40px] text-sm font-medium text-slate-500 tracking-wide">
               Regression Suite Optimizer
             </span>
           </div>
