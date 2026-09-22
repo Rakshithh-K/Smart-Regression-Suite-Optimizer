@@ -895,64 +895,20 @@ During the development and testing of SRSO, several non-trivial engineering bugs
 - [ ] **Dynamic Flakiness Detection:** Ingest live JUnit/Allure XML reports to calculate moving-average failure rates dynamically.
 - [ ] **Multi-Repository Git Auto:** Allow toggling and filtering between multiple configured repositories within the Git Auto UI.
 
----
+## Contributing
 
-## Learning Outcomes
+Contributions, issues, and feature requests are welcome!
 
-This project demonstrates proficiency across critical full-stack and software engineering domains:
-- **Algorithms & Optimization:** Modeling software testing constraints as a 0/1 Knapsack Problem and solving it via Dynamic Programming.
-- **AI/Deterministic System Boundaries:** Designing hybrid architectures where AI assists comprehension without compromising deterministic reliability.
-- **Modern REST API Architecture:** Developing layered, asynchronous backends with FastAPI, SQLAlchemy 2.0, and Pydantic.
-- **Full-Stack Security:** Implementing Argon2 hashing, HTTP-only cookie sessions, email OTP verification, and HMAC-SHA256 webhook signatures.
-- **GitHub Apps & Webhooks:** Minting asymmetric RS256 JWTs, obtaining installation tokens, and integrating with the GitHub Compare API.
-- **Production Debugging & Testing:** Writing comprehensive regression suites (40 tests with Pytest) verifying cascades, race conditions, and ownership scoping.
+1. Fork the repository.
+2. Create your feature branch (`git checkout -b feature/amazing-feature`).
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`).
+4. Push to the branch (`git push origin feature/amazing-feature`).
+5. Open a Pull Request.
 
----
-
-## Interview and Project Explanation
-
-### 30-Second Explanation
-> "The Smart Regression Suite Optimizer is a full-stack platform that analyzes software changes and selects the most critical regression tests to run within a fixed time budget. It uses AI for semantic change matching and natural-language trade-off explanations, but uses a deterministic 0/1 Knapsack algorithm to guarantee that the selected suite maximizes testing value without ever exceeding the time limit."
-
-### 1-Minute Explanation
-> "When software changes are committed, running the entire regression catalog often exceeds the available release window. SRSO solves this by taking a plain-English change description or GitHub push event, evaluating candidate tests against relevance, priority, and historical failure counts, and selecting the optimal test suite using dynamic programming.
-> A key architectural highlight is the strict AI boundary: generative AI never makes the final selection. AI handles semantic matching and human-readable trade-off explanations, while deterministic code calculates priority scores and budget optimization. The system includes full user authentication, MySQL persistence, and an autonomous GitHub App integration called Git Auto that analyzes commits and diffs in real time."
-
-### 3-Minute Technical Deep-Dive
-> "The Smart Regression Suite Optimizer is architected into three main layers: a React 19 frontend, a FastAPI backend, and a core deterministic engine.
-> When a change occurs, either through a manual upload or an autonomous GitHub push webhook, the change description is matched against test metadata. We support both OpenAI GPT models and an offline mock provider that calculates semantic relevance scores from 0 to 100.
-> Next, our deterministic prioritizer applies a three-factor scoring formula: 50% relevance, 30% business priority (High=100, Medium=60, Low=30), and 20% normalized historical failure rate. Duration is intentionally excluded from this score because it represents execution cost, not testing value.
-> We then feed the scores and durations into a 0/1 Knapsack dynamic programming optimizer. The available execution time budget acts as the knapsack capacity. The algorithm runs in O(N × B) time, finding the mathematical subset that maximizes total priority score within the budget.
-> Following selection, our analyzers compute module and tag coverage, isolate high-risk excluded tests, calculate a Risk Debt Index, and prompt an AI explainer to verbalize the trade-offs.
-> On the security side, we implement Argon2 password hashing, database-backed HTTP-only cookie sessions, email OTPs, and HMAC-SHA256 signature verification for webhooks. The entire system is validated by a 40-test Pytest suite covering algorithm correctness, API contracts, cascade deletions, and cross-user security scoping."
+Make sure all 40 automated tests pass before submitting a pull request:
+```bash
+python -m pytest
+```
 
 ---
-
-### Evaluator Q&A
-
-#### Q1: Why did you choose the 0/1 Knapsack algorithm instead of a greedy heuristic?
-**Answer:** A greedy approach that selects tests based solely on priority-to-duration ratio frequently gets stuck in local optima, leaving large chunks of the budget unused. The 0/1 Knapsack algorithm solved via Dynamic Programming guarantees the mathematically optimal subset that extracts maximum testing value from the available time window.
-
-#### Q2: Why does AI not choose the final regression tests?
-**Answer:** Generative AI models are inherently non-deterministic, can hallucinate test cases, and cannot mathematically guarantee budget constraints. In mission-critical regression testing, consistency and auditability are non-negotiable. AI is used where it excels—semantic text comprehension and explanation—while deterministic code enforces scores and constraints.
-
-#### Q3: How do you guarantee the execution-time budget is never exceeded?
-**Answer:** In [`src/optimizer.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/optimizer.py), the dynamic programming table is bounded at `time_budget`. The transition relation only evaluates states where `duration <= remaining_time`. It is mathematically impossible for the returned subset duration to exceed the specified budget.
-
-#### Q4: How does historical failure information affect prioritization?
-**Answer:** Historical failures act as an empirical risk signal. Tests that frequently fail are more likely to catch regressions. We normalize failure counts relative to the maximum failure count in the active catalog and assign it a 20% weight in the final priority score.
-
-#### Q5: How does Git Auto work from push to recommendation?
-**Answer:** GitHub sends a webhook on `git push`. The backend validates the HMAC-SHA256 signature, mints an RS256 JWT to authenticate as a GitHub App, queries the GitHub Compare API for commit diffs, runs an AI impact analysis on the changed files, and executes the optimization pipeline against the repository's uploaded test catalog.
-
-#### Q6: How do you prevent cross-user access in Git Auto?
-**Answer:** All queries in [`backend/git_routes.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/backend/git_routes.py) query `GitProject` records filtering by `user_id == current_user.id`. Run detail and deletion operations check `GitRun.git_project_id.in_(project_ids)`. If a user attempts to access or delete another user's run, the endpoint returns a `404 Not Found`.
-
-#### Q7: What happens if OpenAI is unavailable?
-**Answer:** The system gracefully falls back to the built-in mock AI provider ([`src/ai_matcher.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/ai_matcher.py) and [`src/ai_explainer.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/ai_explainer.py)), which uses deterministic keyword matching and templated reasoning. The application and all 40 tests function without an external network connection or API key.
-
----
-
-## Conclusion
-
-The **Smart Regression Suite Optimizer** bridges the gap between machine intelligence and deterministic software engineering. By constraining AI to semantic interpretation and explanation while relying on proven combinatorial optimization algorithms for decision-making, SRSO delivers a fast, transparent, and mathematically sound solution to regression testing bottlenecks in continuous delivery pipelines.
+ 
