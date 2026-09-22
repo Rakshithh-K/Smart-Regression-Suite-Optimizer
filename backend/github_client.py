@@ -3,26 +3,34 @@ import time
 
 import httpx
 import jwt
-
+import base64
 
 GITHUB_API = "https://api.github.com"
 
 
 def create_app_jwt() -> str:
     app_id = os.getenv("GITHUB_APP_ID")
-    key_path = os.getenv("GITHUB_PRIVATE_KEY_PATH")
 
-    if not app_id or not key_path:
-        raise ValueError(
-            "GitHub App credentials are not configured."
-        )
+    if not app_id:
+        raise ValueError("GitHub App ID is not configured.")
 
-    with open(
-        key_path,
-        "r",
-        encoding="utf-8",
-    ) as file:
-        private_key = file.read()
+    # Production: read the private key from an environment variable
+    private_key_b64 = os.getenv("GITHUB_PRIVATE_KEY_B64")
+
+    if private_key_b64:
+        try:
+            private_key = base64.b64decode(private_key_b64).decode("utf-8")
+        except Exception as exc:
+            raise ValueError("Invalid GitHub private key configuration.") from exc
+    else:
+        # Local development: continue using the .pem file
+        key_path = os.getenv("GITHUB_PRIVATE_KEY_PATH")
+
+        if not key_path:
+            raise ValueError("GitHub private key is not configured.")
+
+        with open(key_path, "r", encoding="utf-8") as file:
+            private_key = file.read()
 
     now = int(time.time())
 
@@ -37,7 +45,6 @@ def create_app_jwt() -> str:
         private_key,
         algorithm="RS256",
     )
-
 
 def get_installation_token(
     installation_id: str,
