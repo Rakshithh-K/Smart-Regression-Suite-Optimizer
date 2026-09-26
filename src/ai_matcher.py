@@ -1,4 +1,5 @@
 import json
+import os
 
 import pandas as pd
 
@@ -103,22 +104,94 @@ Return ONLY valid JSON in this format:
 }}
 
 Rules:
-- Score must be between 0 and 100.
+- Score must be a number between 0 and 100.
 - 0 means not relevant.
 - 100 means extremely relevant.
 - Consider the module, description, and tags.
 - Return every test_id exactly once.
 - Do not include explanations.
+- Do not include test IDs that are not provided.
 """
 
+    ai_provider = os.getenv(
+        "AI_PROVIDER",
+        "mock",
+    ).lower()
+
+    if ai_provider == "gemini":
+        model = os.getenv(
+            "GEMINI_MODEL",
+            "gemini-3.8-flash",
+        )
+    else:
+        model = "gpt-5.6-luna"
+
     response = provider.responses.create(
-        model="gpt-5.6-luna",
+        model=model,
         input=prompt,
     )
 
-    result = json.loads(response.output_text)
+    try:
+        result = json.loads(
+            response.output_text
+        )
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            "AI provider returned invalid JSON "
+            "for relevance scoring."
+        ) from exc
 
-    return {
-        test_id: float(score)
-        for test_id, score in result.items()
+    expected_test_ids = {
+        str(test_id)
+        for test_id in df["test_id"]
     }
+
+    returned_test_ids = {
+        str(test_id)
+        for test_id in result.keys()
+    }
+
+    missing_test_ids = (
+        expected_test_ids - returned_test_ids
+    )
+
+    unexpected_test_ids = (
+        returned_test_ids - expected_test_ids
+    )
+
+    if missing_test_ids:
+        raise ValueError(
+            "AI provider did not return scores for "
+            f"these test cases: "
+            f"{sorted(missing_test_ids)}"
+        )
+
+    if unexpected_test_ids:
+        raise ValueError(
+            "AI provider returned scores for "
+            f"unknown test cases: "
+            f"{sorted(unexpected_test_ids)}"
+        )
+
+    scores = {}
+
+    for test_id in df["test_id"]:
+        test_id = str(test_id)
+
+        try:
+            score = float(result[test_id])
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"Invalid relevance score for {test_id}."
+            ) from exc
+
+        if not 0 <= score <= 100:
+            raise ValueError(
+                f"Invalid relevance score for "
+                f"{test_id}: {score}. "
+                "Score must be between 0 and 100."
+            )
+
+        scores[test_id] = score
+
+    return scores

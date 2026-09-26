@@ -1,4 +1,5 @@
 import json
+import os
 
 import pandas as pd
 
@@ -97,7 +98,7 @@ For every excluded test, explain:
 - Why it was excluded despite that risk.
 - The time-budget trade-off involved.
 
-Return ONLY valid JSON in this format:
+Return ONLY valid JSON in this exact format:
 
 {{
     "selected_reasons": {{
@@ -109,13 +110,40 @@ Return ONLY valid JSON in this format:
     "overall_tradeoff": "overall explanation"
 }}
 
-Do not change or question the optimizer's selection.
-Explain the decisions using only the information provided.
+Rules:
+- Do not change or question the optimizer's selection.
+- Do not recommend additional tests.
+- Do not remove any selected tests.
+- Explain the decisions using only the information provided.
+- Return only valid JSON.
 """
 
+    ai_provider = os.getenv(
+        "AI_PROVIDER",
+        "mock",
+    ).lower()
+
+    if ai_provider == "gemini":
+        model = os.getenv(
+            "GEMINI_MODEL",
+            "gemini-3.8-flash",
+        )
+    else:
+        model = "gpt-5.6-luna"
+
     response = provider.responses.create(
-        model="gpt-5.6-luna",
+        model=model,
         input=prompt,
     )
 
-    return json.loads(response.output_text)
+    try:
+        result = json.loads(
+            response.output_text
+        )
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            "AI provider returned invalid JSON "
+            "for test explanations."
+        ) from exc
+
+    return result
