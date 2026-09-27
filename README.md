@@ -836,11 +836,7 @@ During the development and testing of SRSO, several non-trivial engineering bugs
 
 ## End-to-End Example
 
-### Scenario
-**Code Change:** `"Updated payment processing and checkout validation."`  
-**Execution Budget:** `30 minutes`  
-**Catalog:** 20 test cases total (total duration = 162 minutes).
-
+### Scenario 
 ### Step-by-Step Flow:
 1. **Semantic Matching:**
    - Tests tagged with `"payment"`, `"upi"`, `"checkout"` (such as `TC013`, `TC014`, `TC015`, `TC016`, `TC017`) match keywords and receive high relevance scores ($75 - 100$).
