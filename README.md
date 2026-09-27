@@ -72,28 +72,19 @@ In practical software engineering:
 
 ```mermaid
 flowchart TD
-
-    User([QA Engineer / Developer])
-        -->|CSV + Change Description + Budget|
-        Frontend[React 19 + Vite]
-
-    Frontend
-        -->|POST /api/optimize + Session Cookie|
-        Backend[FastAPI Backend]
+    User([QA Engineer / Developer]) -->|CSV + Change Description + Budget| Frontend["React 19 + Vite Frontend"]
+    Frontend -->|POST /api/optimize + Session Cookie| Backend["FastAPI Backend"]
 
     subgraph CorePipeline["Core Pipeline: src/pipeline.py"]
-
-        PipelineEntry[run_pipeline()]
-
-        DataLoader[data_loader.py: CSV Validation]
-        AIMatcher[ai_matcher.py: AI Relevance Matching]
-        Prioritizer[prioritizer.py: Deterministic Scoring]
-        Optimizer[optimizer.py: 0/1 Knapsack DP]
-
-        Exclusion[exclusion_analyzer.py: High-Risk Exclusion]
-        Coverage[coverage_analyzer.py: Module & Tag Coverage]
-        RiskDebt[risk_debt_analyzer.py: Risk Debt Index]
-        AIExplainer[ai_explainer.py: AI Trade-Off Explanation]
+        PipelineEntry["run_pipeline()"]
+        DataLoader["data_loader.py: CSV Validation"]
+        AIMatcher["ai_matcher.py: AI Relevance Matching"]
+        Prioritizer["prioritizer.py: Deterministic Scoring"]
+        Optimizer["optimizer.py: 0/1 Knapsack DP"]
+        Exclusion["exclusion_analyzer.py: High-Risk Exclusion"]
+        Coverage["coverage_analyzer.py: Module & Tag Coverage"]
+        RiskDebt["risk_debt_analyzer.py: Risk Debt Index"]
+        AIExplainer["ai_explainer.py: AI Trade-Off Explanation"]
 
         PipelineEntry --> DataLoader
         DataLoader --> AIMatcher
@@ -104,15 +95,12 @@ flowchart TD
         Optimizer --> Coverage
         Optimizer --> RiskDebt
         Optimizer --> AIExplainer
-
     end
 
     Backend --> PipelineEntry
-
-    PipelineEntry --> DB[(MySQL Database: Runs & Results)]
+    PipelineEntry --> DB[("MySQL Database: Runs & Results")]
     PipelineEntry --> Frontend
-```
-### Git Auto Workflow
+```### Git Auto Workflow
 ```mermaid
 flowchart TD
     Dev([Developer]) -->|git push| GitHub[GitHub Repository]
