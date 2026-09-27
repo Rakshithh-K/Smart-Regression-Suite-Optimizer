@@ -7,6 +7,7 @@ import {
   FileClock,
 } from "lucide-react";
 import axios from "axios";
+import { formatDateTime } from "../utils/date";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL||"http://localhost:8000";
 
@@ -32,7 +33,16 @@ function History() {
   };
 
   useEffect(() => {
-    loadHistory();
+    let isMounted = true;
+    const fetchHistory = async () => {
+      if (isMounted) {
+        await loadHistory();
+      }
+    };
+    fetchHistory();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const openRun = async (runId) => {
@@ -77,7 +87,7 @@ function History() {
               RUN #{run.run_number ?? run.id}
             </span>
             <span className="text-sm text-slate-500 font-mono">
-              {new Date(run.created_at).toLocaleString()}
+              {formatDateTime(run.created_at)}
             </span>
           </div>
 
@@ -276,12 +286,7 @@ function History() {
                       </td>
 
                       <td className="py-3.5 px-4 font-mono text-slate-500 whitespace-nowrap text-sm">
-                        {new Date(run.created_at).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {formatDateTime(run.created_at)}
                       </td>
 
                       <td className="py-3.5 px-4 text-slate-900 font-medium max-w-xs sm:max-w-md truncate text-sm sm:text-base">

@@ -12,6 +12,7 @@ import {
   ChevronRight,
   AlertTriangle,
 } from "lucide-react";
+import { formatDateTime } from "../../utils/date";
 
 function GitRunDetails({ runData, onBack }) {
   const [copiedSha, setCopiedSha] = useState(false);
@@ -141,13 +142,7 @@ function GitRunDetails({ runData, onBack }) {
               Run #{id}
             </span>
             <span className="text-sm text-slate-500">
-              {created_at ? new Date(created_at).toLocaleString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              }) : "—"}
+              {formatDateTime(created_at)}
             </span>
           </div>
 

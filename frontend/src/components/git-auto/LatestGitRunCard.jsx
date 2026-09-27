@@ -8,6 +8,7 @@ import {
   Check,
   ArrowRight,
 } from "lucide-react";
+import { formatDateTime } from "../../utils/date";
 
 function LatestGitRunCard({ run, runDetail, onViewRun }) {
   const [copied, setCopied] = useState(false);
@@ -131,15 +132,7 @@ function LatestGitRunCard({ run, runDetail, onViewRun }) {
           {run.created_at && (
             <>
               <span>•</span>
-              <span>
-                {new Date(run.created_at).toLocaleString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
+              <span>{formatDateTime(run.created_at)}</span>
             </>
           )}
         </div>

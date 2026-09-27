@@ -12,6 +12,7 @@ import {
   Trash2,
   Loader2,
 } from "lucide-react";
+import { formatDateTime } from "../../utils/date";
 
 function GitAutoHistoryTable({ runs = [], onViewRun, onDeleteRun, onRefresh }) {
   const [copiedId, setCopiedId] = useState(null);
@@ -213,13 +214,7 @@ function GitAutoHistoryTable({ runs = [], onViewRun, onDeleteRun, onRefresh }) {
 
                         {/* Created Date */}
                         <td className="py-4 px-4 text-sm text-slate-500 whitespace-nowrap">
-                          {run.created_at
-                            ? new Date(run.created_at).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              })
-                            : "—"}
+                          {formatDateTime(run.created_at)}
                         </td>
 
                         {/* Action */}
@@ -309,12 +304,7 @@ function GitAutoHistoryTable({ runs = [], onViewRun, onDeleteRun, onRefresh }) {
                       {run.budget ? `${run.budget} min` : "—"}
                     </span>
                     <span>
-                      {run.created_at
-                        ? new Date(run.created_at).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                          })
-                        : "—"}
+                      {formatDateTime(run.created_at)}
                     </span>
                     {onDeleteRun && (
                       <button
