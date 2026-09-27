@@ -68,48 +68,50 @@ In practical software engineering:
 - **Git Auto Run Details & Deletion:** Dedicated UI for inspecting commit metadata, changed file patches, module impacts, and deleting specific Git Auto runs with strict user ownership enforcement.
 
 ---
-
-## System Architecture
 ### Standard Pipeline Flow
 
 ```mermaid
 flowchart TD
 
     User([QA Engineer / Developer])
-        -->|Uploads CSV, Budget, Change Desc|
-        Frontend[React 19 + Vite Frontend]
+        -->|CSV + Change Description + Budget|
+        Frontend[React 19 + Vite]
 
     Frontend
         -->|POST /api/optimize + Session Cookie|
         Backend[FastAPI Backend]
 
-    subgraph CorePipeline["src/pipeline.py"]
+    subgraph CorePipeline["Core Pipeline: src/pipeline.py"]
 
-        Backend --> DataLoader[data_loader.py: CSV Validation]
+        PipelineEntry[run_pipeline()]
 
-        DataLoader --> AIMatcher[ai_matcher.py: Relevance Matching]
+        DataLoader[data_loader.py: CSV Validation]
+        AIMatcher[ai_matcher.py: AI Relevance Matching]
+        Prioritizer[prioritizer.py: Deterministic Scoring]
+        Optimizer[optimizer.py: 0/1 Knapsack DP]
 
-        AIMatcher --> Prioritizer[prioritizer.py: Deterministic Scoring Formula]
+        Exclusion[exclusion_analyzer.py: High-Risk Exclusion]
+        Coverage[coverage_analyzer.py: Module & Tag Coverage]
+        RiskDebt[risk_debt_analyzer.py: Risk Debt Index]
+        AIExplainer[ai_explainer.py: AI Trade-Off Explanation]
 
-        Prioritizer --> Optimizer[optimizer.py: 0/1 Knapsack DP]
+        PipelineEntry --> DataLoader
+        DataLoader --> AIMatcher
+        AIMatcher --> Prioritizer
+        Prioritizer --> Optimizer
 
-        Optimizer --> Exclusion[exclusion_analyzer.py: High-Risk Exclusion]
-
-        Optimizer --> Coverage[coverage_analyzer.py: Module & Tag Coverage]
-
-        Optimizer --> RiskDebt[risk_debt_analyzer.py: Risk Debt Index]
-
-        Optimizer --> AIExplainer[ai_explainer.py: AI Trade-Off Reasoning]
+        Optimizer --> Exclusion
+        Optimizer --> Coverage
+        Optimizer --> RiskDebt
+        Optimizer --> AIExplainer
 
     end
 
-    AIExplainer --> DB[(MySQL Database: Runs & Results)]
+    Backend --> PipelineEntry
 
-    DB --> Frontend
-
-    Frontend --> User
+    PipelineEntry --> DB[(MySQL Database: Runs & Results)]
+    PipelineEntry --> Frontend
 ```
-
 ### Git Auto Workflow
 ```mermaid
 flowchart TD
