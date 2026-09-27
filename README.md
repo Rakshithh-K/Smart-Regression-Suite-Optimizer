@@ -70,26 +70,43 @@ In practical software engineering:
 ---
 
 ## System Architecture
-
 ### Standard Pipeline Flow
+
 ```mermaid
 flowchart TD
-    User([QA Engineer / Developer]) -->|Uploads CSV, Budget, Change Desc| Frontend[React 19 + Vite Frontend]
-    Frontend -->|POST /api/optimize + Session Cookie| Backend[FastAPI Backend]
-    
-    subgraph Core Pipeline ["src/pipeline.py"]
+
+    User([QA Engineer / Developer])
+        -->|Uploads CSV, Budget, Change Desc|
+        Frontend[React 19 + Vite Frontend]
+
+    Frontend
+        -->|POST /api/optimize + Session Cookie|
+        Backend[FastAPI Backend]
+
+    subgraph CorePipeline["src/pipeline.py"]
+
         Backend --> DataLoader[data_loader.py: CSV Validation]
-        DataLoader --> AIMatcher[ai_matcher.py: Semantic Relevance Matching]
+
+        DataLoader --> AIMatcher[ai_matcher.py: Relevance Matching]
+
         AIMatcher --> Prioritizer[prioritizer.py: Deterministic Scoring Formula]
+
         Prioritizer --> Optimizer[optimizer.py: 0/1 Knapsack DP]
+
         Optimizer --> Exclusion[exclusion_analyzer.py: High-Risk Exclusion]
+
         Optimizer --> Coverage[coverage_analyzer.py: Module & Tag Coverage]
+
         Optimizer --> RiskDebt[risk_debt_analyzer.py: Risk Debt Index]
+
         Optimizer --> AIExplainer[ai_explainer.py: AI Trade-Off Reasoning]
+
     end
-    
-    Core Pipeline --> DB[(MySQL Database: Runs & Results)]
-    Core Pipeline --> Frontend
+
+    AIExplainer --> DB[(MySQL Database: Runs & Results)]
+
+    DB --> Frontend
+
     Frontend --> User
 ```
 
