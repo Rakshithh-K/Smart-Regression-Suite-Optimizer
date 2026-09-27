@@ -1,331 +1,330 @@
-# Smart Regression Suite Optimizer
+# Smart Regression Suite Optimizer (SRSO)
 
-The **Smart Regression Suite Optimizer (SRSO)** is an intelligent, deterministic decision-support system that analyzes a software change and recommends an optimal subset of regression tests to execute within a fixed execution-time budget.
+Smart Regression Suite Optimizer (SRSO) is an AI-assisted, deterministic decision-support system for selecting a regression-test subset under a fixed execution-time budget.
 
----
+Given:
 
-## Overview
+- a plain-English software change description,
+- a regression-test catalog,
+- a priority for each test,
+- execution duration,
+- historical failure information, and
+- a fixed time budget,
 
-In modern continuous delivery, software test suites grow rapidly. When a software change is introduced, running every single regression test may be impractical or impossible due to tight delivery schedules, cloud compute costs, and constrained deployment windows.
+SRSO ranks the tests, solves a 0/1 Knapsack optimization problem, and returns a regression suite that stays within the budget.
 
-The Smart Regression Suite Optimizer addresses this challenge by evaluating each test case's:
-1. **Relevance** to the incoming code modification.
-2. **Business Priority** (Criticality to operations).
-3. **Historical Failure Signal** (Flakiness or bug-finding track record).
-4. **Execution Duration** (Execution cost in minutes).
+The system also reports exclusions, coverage gaps, deferred risk, and AI-generated explanations.
 
-It selects the highest-value subset of tests whose combined execution time strictly respects the specified time budget.
-
-### Core Architectural Principle: AI Boundary
-
-> **AI does NOT select the final regression suite.**
-
-A foundational architectural decision in SRSO is that generative AI is restricted to semantic comprehension and qualitative explanation:
-- **AI Scope:** Understanding natural-language change descriptions, matching them against test metadata (modules, descriptions, tags), and generating human-readable explanations of selection trade-offs.
-- **Deterministic Scope:** Mathematical prioritization scoring, knapsack optimization, budget enforcement, coverage gap calculation, and risk debt analysis are executed entirely by deterministic algorithms.
-
-This guarantees that identical inputs always yield identical test suites, eliminates hallucinated selections, and ensures strict mathematical compliance with testing time budgets.
+> **Core principle:** AI assists with relevance matching and explanations. The final suite is selected by deterministic scoring and optimization logic.
 
 ---
 
-## Problem Statement
+## Contents
 
-In practical software engineering:
-- A code change or pull request is introduced into a repository.
-- An organization maintains a bounded regression test catalog (e.g., 20+ comprehensive regression suites).
-- Each test case has distinct metadata: `test_id`, `module`, `description`, `priority`, `duration`, `tags`, and `historical_failure_count`.
-- The testing window is strictly bounded (e.g., a 30-minute release window or CI slot).
-- Executing all test cases would exceed the available testing window (e.g., requiring 160+ minutes).
-- Testers must identify and run the most valuable tests without exceeding the budget while understanding what risks remain unaddressed.
+- [Problem](#problem)
+- [How SRSO Works](#how-srso-works)
+- [AI Boundary](#ai-boundary)
+- [Architecture](#architecture)
+- [Technology Stack](#technology-stack)
+- [Core Optimization Logic](#core-optimization-logic)
+- [Git Auto](#git-auto)
+- [Authentication and Security](#authentication-and-security)
+- [Project Structure](#project-structure)
+- [API](#api)
+- [Test Catalog Format](#test-catalog-format)
+- [Running Locally](#running-locally)
+- [AI Provider Configuration](#ai-provider-configuration)
+- [Testing](#testing)
+- [Engineering Fixes](#engineering-fixes)
+- [Known Limitations](#known-limitations)
+- [Future Improvements](#future-improvements)
+
+---
+
+## Problem
+
+Regression suites often contain more tests than can be executed inside a release window.
+
+For example:
+
+```text
+Total regression suite: 160 minutes
+Available release window: 30 minutes
+```
+
+A tester therefore needs to answer:
+
+> Which tests provide the most value within the available 30 minutes?
+
+SRSO models the problem using four signals:
+
+1. **Relevance** to the software change.
+2. **Business priority** of the test.
+3. **Historical failure signal**.
+4. **Execution duration** as the resource cost.
+
+The result is not simply a list of the highest-scoring individual tests. The system finds the best combination of tests whose total execution time does not exceed the available budget.
 
 ---
 
 ## Objectives
 
-- **Time-Constrained Selection:** Guarantee that the total duration of selected tests never exceeds the user's execution budget.
-- **Deterministic Optimization:** Formulate test selection as a 0/1 Knapsack Problem, solved via Dynamic Programming.
-- **AI-Assisted Relevance Matching:** Leverage LLMs (or offline keyword heuristics) to bridge plain-English change descriptions with test metadata.
-- **Explainability:** Automatically explain why tests were selected or excluded in plain English.
-- **Risk & Coverage Awareness:** Compute module/tag coverage, detect coverage gaps, and measure regression risk debt caused by deferred high-risk tests.
-- **Autonomous Git Integration ("Git Auto"):** Automatically capture GitHub push events via webhooks, analyze changed files and diffs, and generate optimized suites for commits.
-- **Enterprise-Grade Security & Auditability:** Secure user authentication (Argon2, HTTP-only cookie sessions, email OTP verification) and scoped regression run histories.
+SRSO is designed to:
+
+- validate uploaded regression-test catalogs,
+- understand a plain-English change description,
+- calculate relevance for each test,
+- combine relevance, business priority, and historical failure information,
+- select a high-value subset within a strict time budget,
+- identify high-risk tests that were excluded,
+- calculate module and tag coverage,
+- calculate a Risk Debt Index for deferred high-risk testing,
+- explain selection trade-offs,
+- maintain user-scoped optimization history,
+- and automatically trigger the same pipeline from GitHub pushes through **Git Auto**.
 
 ---
 
-## Key Features
+## How SRSO Works
 
-- **Test Catalog Loading & Validation:** Ingests CSV test catalogs, performing strict validation on schema, unique identifiers, positive execution durations, non-negative failure counts, and valid priority levels (`High`, `Medium`, `Low`).
-- **AI-Driven Relevance Matching:** Scores the relevance ($0 - 100$) of each test case against the change description using OpenAI GPT models or an offline deterministic mock provider.
-- **Deterministic Multi-Factor Scoring:** Combines relevance ($50\%$), business priority ($30\%$), and normalized historical failure rates ($20\%$) into a unified testing value score.
-- **0/1 Knapsack Optimization:** Employs dynamic programming to maximize total suite value subject to $\sum \text{duration} \le \text{budget}$.
-- **Exclusion & High-Risk Analysis:** Automatically isolates high-risk tests (`High` priority with relevance $\ge 50$) that could not fit into the time budget.
-- **Coverage & Gap Detection:** Evaluates module coverage percentages (`Fully Covered`, `Partially Covered`, `Not Covered`), identifies uncovered modules, and tallies tag distributions.
-- **Regression Risk Debt Index:** Quantifies the percentage of high-risk testing value deferred due to budget limitations and tallies additional time required.
-- **AI Decision Explanations:** Explains why each test was selected or deferred based on relevance, priority, and execution duration.
-- **Full User Authentication & Email OTP:** Registration with 6-digit email verification via SMTP (`aiosmtplib`), Argon2 password hashing, and database-backed HTTP-only cookie sessions.
-- **User-Scoped Regression History:** Stores runs and selected test details in MySQL, featuring per-user sequential run numbering (`Run #1`, `Run #2`) and cascading deletes.
-- **Git Auto (GitHub App Integration):** Webhook-driven pipeline that listens for GitHub `push` events, verifies HMAC-SHA256 signatures, queries the GitHub Compare API for file diffs, performs AI change impact analysis, and executes the optimization pipeline automatically.
-- **Git Auto Run Details & Deletion:** Dedicated UI for inspecting commit metadata, changed file patches, module impacts, and deleting specific Git Auto runs with strict user ownership enforcement.
+The standard manual flow is:
+
+```mermaid
+flowchart TD
+    User["QA Engineer / Developer"] -->|"CSV + Change Description + Budget"| Frontend["React 19 + Vite"]
+    Frontend -->|"POST /api/optimize + Session Cookie"| Backend["FastAPI Backend"]
+
+    Backend --> Pipeline["run_pipeline()"]
+
+    subgraph CorePipeline["Core Regression Pipeline"]
+        Pipeline --> DataLoader["data_loader.py<br/>CSV Validation"]
+        DataLoader --> Matcher["ai_matcher.py<br/>AI Relevance Matching"]
+        Matcher --> Prioritizer["prioritizer.py<br/>Deterministic Scoring"]
+        Prioritizer --> Optimizer["optimizer.py<br/>0/1 Knapsack DP"]
+
+        Optimizer --> Exclusion["exclusion_analyzer.py<br/>High-Risk Exclusions"]
+        Optimizer --> Coverage["coverage_analyzer.py<br/>Module & Tag Coverage"]
+        Optimizer --> RiskDebt["risk_debt_analyzer.py<br/>Risk Debt Index"]
+        Optimizer --> Explainer["ai_explainer.py<br/>Trade-Off Explanations"]
+    end
+
+    Pipeline --> DB[("MySQL")]
+    Pipeline --> Frontend
+```
+
+### Request lifecycle
+
+1. The user uploads the test catalog.
+2. The user enters the software change description.
+3. The user enters an execution-time budget.
+4. FastAPI validates the authenticated request.
+5. `data_loader.py` validates the test catalog.
+6. `ai_matcher.py` produces relevance scores.
+7. `prioritizer.py` calculates deterministic test values.
+8. `optimizer.py` solves the 0/1 Knapsack problem.
+9. Post-analysis calculates exclusions, coverage, risk debt, and recommendations.
+10. `ai_explainer.py` generates natural-language explanations.
+11. The backend persists the run and selected-test results.
+12. React renders the result.
 
 ---
-<<<<<<< HEAD
-### Standard Pipeline Flow
-=======
 
-## System Architecture
->>>>>>> 512a7b6 (docs: update project README)
+## AI Boundary
 
-### Standard Pipeline Flow
-```mermaid
-flowchart TD
-<<<<<<< HEAD
-    User([QA Engineer / Developer]) -->|CSV + Change Description + Budget| Frontend["React 19 + Vite Frontend"]
-    Frontend -->|POST /api/optimize + Session Cookie| Backend["FastAPI Backend"]
+The AI boundary is intentionally narrow.
 
-    subgraph CorePipeline["Core Pipeline: src/pipeline.py"]
-        PipelineEntry["run_pipeline()"]
-        DataLoader["data_loader.py: CSV Validation"]
-        AIMatcher["ai_matcher.py: AI Relevance Matching"]
-        Prioritizer["prioritizer.py: Deterministic Scoring"]
-        Optimizer["optimizer.py: 0/1 Knapsack DP"]
-        Exclusion["exclusion_analyzer.py: High-Risk Exclusion"]
-        Coverage["coverage_analyzer.py: Module & Tag Coverage"]
-        RiskDebt["risk_debt_analyzer.py: Risk Debt Index"]
-        AIExplainer["ai_explainer.py: AI Trade-Off Explanation"]
+### AI is used for
 
-        PipelineEntry --> DataLoader
-        DataLoader --> AIMatcher
-        AIMatcher --> Prioritizer
-        Prioritizer --> Optimizer
+**1. Relevance matching**
 
-=======
-    User(["QA Engineer / Developer"]) -->|Uploads CSV, Budget, Change Desc| Frontend["React 19 + Vite Frontend"]
-    Frontend -->|POST /api/optimize + Session Cookie| Backend["FastAPI Backend"]
+The change description is compared with test metadata:
 
-    subgraph CorePipeline["Core Pipeline: src/pipeline.py"]
-        DataLoader["data_loader.py: CSV Validation"]
-        AIMatcher["ai_matcher.py: Semantic Relevance Matching"]
-        Prioritizer["prioritizer.py: Deterministic Scoring Formula"]
-        Optimizer["optimizer.py: 0-1 Knapsack DP"]
-        Exclusion["exclusion_analyzer.py: High-Risk Exclusion"]
-        Coverage["coverage_analyzer.py: Module and Tag Coverage"]
-        RiskDebt["risk_debt_analyzer.py: Risk Debt Index"]
-        AIExplainer["ai_explainer.py: AI Trade-Off Reasoning"]
+- module,
+- description,
+- tags.
 
-        DataLoader --> AIMatcher
-        AIMatcher --> Prioritizer
-        Prioritizer --> Optimizer
->>>>>>> 512a7b6 (docs: update project README)
-        Optimizer --> Exclusion
-        Optimizer --> Coverage
-        Optimizer --> RiskDebt
-        Optimizer --> AIExplainer
-    end
+The AI produces a relevance score from 0 to 100.
 
-<<<<<<< HEAD
-    Backend --> PipelineEntry
-    PipelineEntry --> DB[("MySQL Database: Runs & Results")]
-    PipelineEntry --> Frontend
-```### Git Auto Workflow
-=======
-    Backend --> DataLoader
-    Exclusion --> DB[("MySQL Database: Runs and Results")]
-    Coverage --> DB
-    RiskDebt --> DB
-    AIExplainer --> DB
-    DB --> Frontend
-    Frontend --> User
+**2. Explanation**
+
+After the deterministic optimizer has selected the suite, the AI explains:
+
+- why selected tests are relevant,
+- why selected tests are valuable,
+- why high-risk tests were excluded,
+- and what budget trade-off occurred.
+
+### AI does not perform
+
+AI does not:
+
+- select the final test suite,
+- run the Knapsack optimization,
+- override the time budget,
+- change the deterministic scoring formula,
+- calculate coverage,
+- calculate Risk Debt,
+- or modify the optimizer's result.
+
+The architecture is therefore:
+
+```text
+Change Description
+       |
+       v
+AI Relevance Matching
+       |
+       v
+Deterministic Priority Scoring
+       |
+       v
+0/1 Knapsack Optimization
+       |
+       v
+Final Regression Suite
+       |
+       v
+AI Explanation
 ```
 
-### Git Auto Workflow
->>>>>>> 512a7b6 (docs: update project README)
-```mermaid
-flowchart TD
-    Dev(["Developer"]) -->|git push| GitHub["GitHub Repository"]
-    GitHub -->|Push Webhook plus HMAC-SHA256| WebhookHandler["backend/github_webhook.py"]
+This means the final optimization decision is deterministic **for a fixed set of relevance scores**. The AI relevance stage itself can vary when using a live model.
 
-    subgraph GitAutoProcessing["Git Auto Processing"]
-        SigCheck{"Verify HMAC Signature"}
-        Reject["401 Unauthorized"]
-        GHClient["backend/github_client.py"]
-        GitHubApp["GitHub App Authentication"]
-        CompareAPI["GitHub Compare API"]
-        ChangeAnalyzer["src/github_change_analyzer.py"]
-        GitImpact["src/git_impact_service.py"]
-        CorePipelineRef["src/pipeline.py"]
+---
 
-        SigCheck -->|Invalid| Reject
-        SigCheck -->|Valid| GHClient
-        GHClient -->|Generate RS256 JWT| GitHubApp
-        GitHubApp -->|Installation Access Token| CompareAPI
-        CompareAPI -->|Changed Files and Diffs| ChangeAnalyzer
-        ChangeAnalyzer -->|Synthesized Change Description| GitImpact
-        GitImpact --> CorePipelineRef
-    end
+## Architecture
 
-    WebhookHandler --> SigCheck
-    CorePipelineRef --> GitDB[("MySQL: git_projects and git_runs")]
-    GitDB --> GitAutoUI["Frontend Git Auto Dashboard"]
+```text
+                         ┌─────────────────────┐
+                         │   React Frontend    │
+                         │  Vite + Tailwind    │
+                         └──────────┬──────────┘
+                                    │ HTTP
+                                    v
+                         ┌─────────────────────┐
+                         │   FastAPI Backend   │
+                         │ Auth + API + GitHub │
+                         └──────────┬──────────┘
+                                    │
+                    ┌───────────────┼────────────────┐
+                    │               │                │
+                    v               v                v
+             Optimization       MySQL DB       GitHub Webhook
+               Pipeline              │                │
+                    │                 │                │
+                    │                 │                v
+                    │                 │         GitHub Compare API
+                    │                 │                │
+                    │                 │                v
+                    │                 │        Change Analysis
+                    │                 │                │
+                    └─────────────────┴──────> Same Pipeline
 ```
+
+### Major layers
+
+#### Frontend
+
+Responsible for:
+
+- authentication screens,
+- optimization form,
+- result visualization,
+- history,
+- Git Auto configuration,
+- Git Auto run inspection,
+- and user interactions.
+
+#### Backend
+
+Responsible for:
+
+- HTTP APIs,
+- authentication,
+- session handling,
+- database persistence,
+- GitHub App authentication,
+- webhook verification,
+- and orchestration of the optimization pipeline.
+
+#### Core pipeline
+
+Responsible for:
+
+- loading and validating test data,
+- AI relevance matching,
+- deterministic prioritization,
+- Knapsack optimization,
+- exclusion analysis,
+- coverage analysis,
+- risk debt analysis,
+- recommendations,
+- and AI explanations.
+
+#### Database
+
+Stores:
+
+- users,
+- OTP verification records,
+- sessions,
+- regression runs,
+- selected test results,
+- Git projects,
+- and Git Auto runs.
 
 ---
 
 ## Technology Stack
 
-| Technology | Layer / Category | Why It Is Used in the Project |
-| :--- | :--- | :--- |
-| **React 19** | Frontend Framework | Declarative component model for rendering responsive metrics, coverage bars, test tables, and configuration modals. |
-| **Vite 8** | Frontend Build Tool | Blazing-fast development server with instant HMR and optimized production bundling. |
-| **Tailwind CSS v4** | UI Styling | Utility-first CSS framework for clean, modern dark/light dashboard aesthetics, cards, and responsive grids. |
-| **React Router v7** | Frontend Routing | Client-side routing with route protection (`ProtectedRoute`), nested layouts (`AppLayout`), and dynamic route parameters (`/git-auto/runs/:runId`). |
-| **Axios** | HTTP Client | Promise-based HTTP client configured with `withCredentials: true` for automatic HTTP-only session cookie transmission. |
-| **Lucide React** | UI Icons | High-quality, consistent iconography for status indicators, metrics, and navigation. |
-| **Python 3.10+** | Backend Runtime | Modern Python environment with native type hinting and robust data science / web libraries. |
-| **FastAPI** | Backend Framework | High-performance asynchronous REST API framework with native Pydantic validation, dependency injection, and automatic OpenAPI documentation. |
-| **Uvicorn** | ASGI Server | Lightning-fast ASGI web server implementation for hosting FastAPI. |
-| **Pandas & NumPy** | Data Processing | Vectorized tabular operations for test catalog validation, DataFrame filtering, grouping, and coverage analysis. |
-| **SQLAlchemy 2.0** | ORM / Persistence | Type-safe Object-Relational Mapping with declarative models, explicit foreign keys, cascading deletions, and transactional integrity. |
-| **PyMySQL** | MySQL Driver | Pure-Python MySQL client connecting SQLAlchemy with the underlying relational database. |
-| **Argon2-cffi** | Security & Cryptography | Winner of the Password Hashing Competition; used for hashing user passwords and email OTP tokens resistant to GPU/ASIC cracking. |
-| **PyJWT & Cryptography** | GitHub Authentication | Implements RS256 private key signing to mint short-lived GitHub App JWTs and obtain installation tokens. |
-| **aiosmtplib** | Asynchronous Email | Asynchronous SMTP client used to send 6-digit OTP verification codes via TLS. |
-| **OpenAI Python SDK** | Artificial Intelligence | Client interface for querying GPT models (`gpt-5.6-luna`) for semantic matching and trade-off explanations. |
-| **Pytest** | Automated Testing | Comprehensive testing framework used to execute the 40 automated unit, integration, and security tests. |
+| Technology | Role |
+|---|---|
+| React 19 | Frontend UI |
+| Vite | Frontend build tool |
+| Tailwind CSS | Styling |
+| React Router | Client-side routing |
+| Axios | API communication |
+| Lucide React | UI icons |
+| Python 3.10+ | Backend/runtime |
+| FastAPI | REST API |
+| Uvicorn | ASGI server |
+| Pandas | Test-catalog processing |
+| NumPy | Data/array operations |
+| SQLAlchemy 2 | ORM |
+| MySQL | Persistence |
+| PyMySQL | MySQL driver |
+| Argon2 | Password and OTP hashing |
+| aiosmtplib | Email OTP delivery |
+| PyJWT | GitHub App JWT generation |
+| Cryptography | GitHub App signing |
+| OpenAI Python SDK | Optional AI provider |
+| Google GenAI SDK | Gemini AI provider |
+| Pytest | Automated testing |
 
 ---
 
-## Project Structure
+## Core Optimization Logic
 
+### 1. Test relevance
+
+Each test receives a relevance score:
+
+```text
+0   = not relevant
+100 = extremely relevant
 ```
-Smart-Regression-Suite-Optimizer/
-├── backend/                              # FastAPI Backend application
-│   ├── api.py                            # Main FastAPI app, CORS, /api/optimize endpoint
-│   ├── auth.py                           # Password hashing (Argon2) & user query helpers
-│   ├── auth_routes.py                    # Routes: /register, /login, /verify-otp, /me, /logout
-│   ├── database.py                       # SQLAlchemy engine, SessionLocal, get_db dependency
-│   ├── git_models.py                     # SQLAlchemy models: GitProject, GitRun
-│   ├── git_routes.py                     # Routes: /setup, /project, /runs, /runs/{id} (GET/DELETE)
-│   ├── github_client.py                  # GitHub App JWT minting, installation tokens, Compare API
-│   ├── github_webhook.py                 # POST /api/github/webhook (HMAC verification, push trigger)
-│   ├── history_routes.py                 # Routes: /api/history (list runs, get single run)
-│   ├── migrate_run_numbers_and_cascades.py # DB migration for per-user run numbering & cascades
-│   ├── models.py                         # SQLAlchemy models: User, OTPVerification, UserSession, etc.
-│   ├── otp_service.py                    # 6-digit OTP generation, hashing, and SMTP sending
-│   ├── schemas.py                        # Pydantic schemas for request validation
-│   └── session.py                        # Cookie-based session creation, validation, and deletion
-├── data/                                 # Data catalogs and local project storage
-│   ├── git_projects/                     # Uploaded catalogs for configured Git Auto repositories
-│   └── test_cases.csv                    # Default bounded 20-test catalog
-├── frontend/                             # React + Vite frontend application
-│   ├── src/
-│   │   ├── api.js                        # Axios API client functions
-│   │   ├── App.jsx                       # React Router configuration & route declarations
-│   │   ├── main.jsx                      # DOM mount point
-│   │   ├── components/
-│   │   │   ├── auth/                     # ProtectedRoute, Auth forms
-│   │   │   ├── dashboard/                # StatsCards, OptimizationForm, SelectedTestsTable,
-│   │   │   │                             # HighRiskTests, CoverageSection, RegressionRiskDebt, AIReasoning
-│   │   │   ├── git-auto/                 # GitAutoHeader, GitAutoSetup, LatestGitRunCard,
-│   │   │   │                             # GitAutoHistoryTable, GitRunDetails
-│   │   │   └── layout/                   # AppLayout, Navbar, Sidebar
-│   │   ├── context/
-│   │   │   └── AuthContext.jsx           # Global authentication state provider
-│   │   └── pages/
-│   │       ├── Dashboard.jsx             # Manual regression optimization page
-│   │       ├── GitAuto.jsx               # Autonomous GitHub pipeline dashboard & run inspector
-│   │       ├── History.jsx               # Optimization history table & run modal
-│   │       ├── InputFormat.jsx           # CSV catalog specification & interactive documentation
-│   │       ├── Login.jsx                 # User login page
-│   │       ├── Register.jsx              # User registration page
-│   │       ├── Settings.jsx              # User profile & credentials view
-│   │       └── VerifyOTP.jsx             # 6-digit email OTP verification page
-│   ├── package.json                      # Frontend dependencies & scripts
-│   └── vite.config.js                    # Vite configuration
-├── src/                                  # Core regression optimization logic
-│   ├── ai_explainer.py                   # Natural language trade-off explanation generator
-│   ├── ai_matcher.py                     # Change-to-test relevance matcher (OpenAI / Mock)
-│   ├── ai_provider.py                    # Provider resolver (mock vs. openai)
-│   ├── coverage_analyzer.py              # Module and tag coverage calculator
-│   ├── data_loader.py                    # CSV loading, type checking, and schema validation
-│   ├── exclusion_analyzer.py             # Identifies high-risk excluded test cases
-│   ├── git_impact_service.py             # Orchestrates change analysis + pipeline execution
-│   ├── github_change_analyzer.py         # AI commit & file diff impact analyzer
-│   ├── optimizer.py                      # 0/1 Knapsack Dynamic Programming optimizer
-│   ├── pipeline.py                       # Main pipeline orchestration function (`run_pipeline`)
-│   ├── prioritizer.py                    # Deterministic multi-factor scoring formula
-│   ├── recommender.py                    # Summary and recommendation generator
-│   └── risk_debt_analyzer.py             # Regression risk debt and deferred risk calculation
-├── tests/                                # Automated test suite (40 tests)
-│   ├── test_ai_explainer.py              # Tests for AI trade-off explanation formats
-│   ├── test_ai_matcher.py                # Tests for relevance scoring (mock & empty checks)
-│   ├── test_api.py                       # Tests for FastAPI endpoints & upload handling
-│   ├── test_coverage_analyzer.py         # Tests for module/tag coverage calculations
-│   ├── test_data_loader.py               # Tests for CSV validation rules and error raises
-│   ├── test_exclusion_analyzer.py        # Tests for high-risk test exclusion criteria
-│   ├── test_git_auto_fixes.py            # Comprehensive tests for Git Auto bug fixes & ownership
-│   ├── test_git_impact_service.py        # Tests for Git change impact orchestration
-│   ├── test_github_change_analyzer.py    # Tests for commit & diff parsing
-│   ├── test_optimizer.py                 # Tests for 0/1 knapsack budget compliance & optimality
-│   ├── test_pipeline.py                  # Integration tests for end-to-end pipeline
-│   ├── test_prioritizer.py               # Tests for scoring formula weights and normalization
-│   ├── test_recommender.py               # Tests for execution time summary & unused budget
-│   ├── test_risk_debt_analyzer.py        # Tests for risk debt index and deferred module metrics
-│   └── test_run_numbering_and_cascade.py # Tests for per-user run numbering & cascade deletion
-├── PLAN.md                               # Architectural design and specification document
-├── REQUIREMENTS.md                       # Formal functional and non-functional requirements
-└── requirements.txt                      # Python backend dependencies
-```
+
+The current AI layer supports:
+
+- Gemini,
+- OpenAI,
+- deterministic mock matching for development/testing.
 
 ---
 
-## Core Regression Optimization Workflow
+### 2. Business priority
 
-The optimization process executed by `src/pipeline.py::run_pipeline` follows 15 precise steps:
+The deterministic prioritizer maps business priority to a fixed score:
 
-```
-[1. CSV File] ──> [2. Validation] ──> [3. Change Input] ──> [4. AI Relevance]
-                                                                     │
-[8. Selected Suite] <── [7. 0/1 Knapsack] <── [6. Scoring] <── [5. Prioritization]
-       │
-       ├──> [9. Exclusion Analysis]
-       ├──> [10. Coverage Analysis]
-       ├──> [11. Risk Debt Analysis]
-       ├──> [12. Recommendations]
-       └──> [13. AI Explanations] ──> [14. Response Payload] ──> [15. Frontend Dashboard]
-```
-
-| Step | What Happens | Why It Exists | Input | Output | Implementation |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **1. Test Loading** | Loads raw CSV file from disk into a Pandas DataFrame. | Ingests the test catalog for data processing. | File path | `pd.DataFrame` | `src/data_loader.py:load_test_cases` |
-| **2. Validation** | Checks required columns, non-empty rows, unique `test_id`, valid priority levels (`High`, `Medium`, `Low`), positive durations, non-negative failure counts. | Prevents pipeline crashes and corrupted calculations from bad data. | `pd.DataFrame` | Validated `pd.DataFrame` | `src/data_loader.py:load_test_cases` |
-| **3. Change Input** | Receives the plain-English description of the software change. | Provides the functional context of the modification. | String | Stripped String | `backend/api.py:optimize` |
-| **4. Relevance Matching** | Matches change terms against test descriptions, modules, and tags. | Determines which tests have semantic relevance to the change. | DataFrame + Change Description | `dict[test_id, float]` (scores 0–100) | `src/ai_matcher.py:calculate_relevance_scores` |
-| **5. Prioritization** | Computes normalized failure scores and priority scores per test. | Synthesizes multiple engineering signals into a single ranking metric. | DataFrame + Relevance Scores | DataFrame with `priority_score` | `src/prioritizer.py:prioritize_tests` |
-| **6. Score Calculation** | Applies exact weighting: 0.50 × Rel + 0.30 × Prio + 0.20 × Fail. | Balances change relevance against inherent risk and failure frequency. | Row metadata | Float (rounded to 2 decimals) | `src/prioritizer.py:calculate_priority_score` |
-| **7. Optimization** | Solves 0/1 Knapsack via dynamic programming with capacity = `time_budget`. | Maximizes testing value without exceeding time limits. | Prioritized DataFrame + Budget | Filtered DataFrame (`selected=True`) | `src/optimizer.py:optimize_regression_suite` |
-| **8. Suite Selection** | Extracts selected test subset sorted by execution sequence. | Final set of tests designated for execution. | Selected DataFrame | Selected Test Rows | `src/optimizer.py:optimize_regression_suite` |
-| **9. Exclusion Analysis** | Filters tests not selected where `priority == "High"` and `relevance_score >= 50`. | Warns QA engineers about critical tests deferred due to budget limits. | All Tests + Selected Tests | `list[dict]` (High-risk exclusions) | `src/exclusion_analyzer.py:analyze_exclusions` |
-| **10. Coverage Analysis** | Computes module coverage rates, uncovered modules, and tag frequencies. | Reveals testing blind spots across system modules. | All Tests + Selected Tests | Coverage metrics dictionary | `src/coverage_analyzer.py:analyze_coverage` |
-| **11. Risk Debt Analysis** | Measures the percentage of relevant high-risk score unexecuted. | Translates exclusions into an actionable "Risk Debt Index". | Excluded Tests + Prioritized Tests | Risk debt metrics dictionary | `src/risk_debt_analyzer.py:calculate_risk_debt` |
-| **12. Recommendations** | Generates summary metrics (unused budget, highest covered module). | Informs user whether budget was fully utilized or has slack. | Selected Tests + Coverage + Budget | Recommendations dictionary | `src/recommender.py:generate_recommendation` |
-| **13. AI Explanations** | Prompts LLM (or mock) to generate trade-off reasoning in plain English. | Provides transparent auditability for human evaluators. | Selected + Excluded + Change + Budget | Explanations dictionary | `src/ai_explainer.py:generate_ai_explanations` |
-| **14. Backend Response** | Persists run & results to DB and returns JSON payload to client. | Records historical execution and provides API contract. | Pipeline outputs | Structured JSON response | `backend/api.py:optimize` |
-| **15. Frontend View** | Renders stat cards, test tables, coverage progress bars, and risk alerts. | Provides an interactive dashboard for the QA engineer. | JSON response | Interactive UI view | `frontend/src/pages/Dashboard.jsx` |
-
----
-
-## Prioritization Algorithm
-
-The deterministic scoring algorithm assigns every candidate test case a `priority_score` between 0 and 100.
-
-### Exact Mathematical Formula
-
-```
-Final Priority Score = (Relevance Score × 0.50) + (Business Priority Score × 0.30) + (Historical Failure Score × 0.20)
-```
-
-#### 1. Business Priority Weights
-Confirmed in `src/prioritizer.py`:
 ```python
 PRIORITY_SCORES = {
     "High": 100,
@@ -334,276 +333,420 @@ PRIORITY_SCORES = {
 }
 ```
 
-#### 2. Historical Failure Normalization
-Confirmed in `src/prioritizer.py`:
-```
-Historical Failure Score = (failure_count / max_failure_count) × 100   if max_failure_count > 0
-                          = 0.0                                        otherwise
+---
+
+### 3. Historical failure score
+
+Historical failures are normalized against the maximum failure count in the catalog:
+
+```text
+Historical Failure Score =
+    (failure_count / max_failure_count) × 100
 ```
 
-#### 3. Why Duration Is a Constraint, Not a Score Component
-A common anti-pattern is dividing priority by duration or subtracting duration from score. In SRSO, **duration represents resource cost (knapsack weight)**, while priority score represents **value**. Treating duration as a constraint rather than a penalty prevents the system from unfairly favoring trivial 1-minute tests over comprehensive, critical 10-minute tests.
+If every failure count is zero, the normalized failure score is zero.
 
 ---
 
-## Optimization Algorithm
+### 4. Final deterministic score
 
-Regression suite selection is formally modeled as the **0/1 Knapsack Problem**, a classic NP-complete combinatorial optimization problem.
+The system combines:
 
-### Problem Mapping
-
-| Knapsack Concept | Regression Optimization Equivalent |
-| :--- | :--- |
-| **Items (i)** | Test cases (TC001, TC002, …, TC020) |
-| **Value (v_i)** | Test `priority_score` (computed deterministically) |
-| **Weight / Cost (w_i)** | Test `duration` (in minutes) |
-| **Capacity (W)** | `time_budget` (available testing window in minutes) |
-| **Decision Variable (x_i)** | Binary: x_i ∈ {0, 1} (1 = Selected, 0 = Excluded) |
-
-### Formal Objective
-```
-max Σ x_i · priority_score_i   subject to   Σ x_i · duration_i ≤ time_budget
+```text
+Final Priority Score =
+    (Relevance × 0.50)
+  + (Business Priority × 0.30)
+  + (Historical Failure × 0.20)
 ```
 
-### Implementation Details
-Implemented in `src/optimizer.py::optimize_regression_suite`:
-- **Dynamic Programming Table:** Uses a 1-dimensional array `dp` of size `time_budget + 1`, where `dp[t]` holds the maximum achievable priority score for testing time `t`.
-- **Backwards Iteration:** The inner loop runs backwards from `time_budget` down to `duration`, ensuring each test case is included at most once (0/1 constraint).
-- **Index Tracking:** A parallel array `selected[t]` stores the list of test indices used to achieve `dp[t]`.
-- **Complexity:**
-  - **Time Complexity:** O(N × B), where N is the number of test cases (e.g., 20) and B is the time budget (e.g., 30). For N=20, B=30, operations are under 1,000 iterations, executing in < 2 milliseconds.
-  - **Space Complexity:** O(B × N) to store the DP table and selected index lists.
+Duration is intentionally **not** included in this score.
+
+Duration represents the resource cost used by the optimization algorithm.
 
 ---
 
-## AI Architecture
+## 0/1 Knapsack Optimization
 
-The boundary between AI and deterministic logic is strictly enforced:
+Regression-suite selection is modeled as a 0/1 Knapsack problem.
 
-```
-┌────────────────────────────────────────────────────────┐
-│                   AI BOUNDARY                           │
-│                                                          │
-│  [Natural Language Change]                               │
-│             │                                            │
-│             ▼                                            │
-│  src/ai_matcher.py (OpenAI / Mock Heuristic)              │
-│  Output: relevance_scores {TC001: 75.0, TC002: 100.0}     │
-└──────────────────────────┬───────────────────────────────┘
-                            │
-                            ▼
-┌────────────────────────────────────────────────────────┐
-│               DETERMINISTIC BOUNDARY                    │
-│                                                          │
-│  1. prioritizer.py: Score = 0.5*Rel + 0.3*Prio + 0.2*F   │
-│  2. optimizer.py: 0/1 Knapsack DP (Budget Bound)          │
-│  3. coverage_analyzer.py: Module/Tag Percentages          │
-│  4. exclusion_analyzer.py: High-Risk Exclusion Logic       │
-│  5. risk_debt_analyzer.py: Risk Debt Index Calculation      │
-└──────────────────────────┬───────────────────────────────┘
-                            │
-                            ▼
-┌────────────────────────────────────────────────────────┐
-│                   AI BOUNDARY                           │
-│                                                          │
-│  src/ai_explainer.py (OpenAI / Mock Heuristic)             │
-│  Input: Selected & Excluded tests + Budget                 │
-│  Output: Natural language explanations of trade-offs       │
-└────────────────────────────────────────────────────────┘
+| Knapsack concept | SRSO equivalent |
+|---|---|
+| Item | Test case |
+| Value | Deterministic priority score |
+| Weight | Test duration |
+| Capacity | Time budget |
+| Decision | Selected or excluded |
+
+The mathematical objective is:
+
+```text
+maximize Σ(priority_score_i × x_i)
+
+subject to:
+
+Σ(duration_i × x_i) <= time_budget
+
+where:
+
+x_i ∈ {0, 1}
 ```
 
-### Mock AI Provider Fallback
-When `AI_PROVIDER=mock` (or when OpenAI is unconfigured/offline):
-- `src/ai_matcher.py` computes relevance using word-overlap heuristics against test metadata:
-  - ≥3 keyword matches → 100.0
-  - 2 keyword matches → 75.0
-  - 1 keyword match → 50.0
-  - 0 keyword matches → 0.0
-- `src/ai_explainer.py` generates structured rule-based trade-off explanations.
-- This ensures 100% of the platform's functionality and tests operate seamlessly offline without external API keys.
+The implementation uses dynamic programming.
+
+For a test with:
+
+```text
+duration = 7 minutes
+priority_score = 94
+```
+
+the optimizer treats:
+
+```text
+7 minutes = cost
+94 = value
+```
+
+The algorithm searches for the highest total value that fits inside the budget.
+
+### Why backwards iteration is used
+
+The dynamic-programming loop processes capacities backwards so that each test can be selected at most once.
+
+That preserves the 0/1 constraint.
+
+### Complexity
+
+For `N` tests and a budget of `B` minutes:
+
+```text
+Time:  O(N × B)
+```
+
+The current challenge scope uses a bounded test catalog and integer-minute durations.
+
+---
+
+## Post-Optimization Analysis
+
+After the Knapsack step, SRSO calculates additional information.
+
+### Exclusion analysis
+
+A test is considered a high-risk exclusion when:
+
+```text
+priority == "High"
+AND
+relevance_score >= 50
+AND
+test was not selected
+```
+
+This makes budget-driven risk visible instead of hiding it.
+
+### Coverage analysis
+
+Coverage analysis reports:
+
+- module coverage,
+- fully covered modules,
+- partially covered modules,
+- uncovered modules,
+- selected-test counts,
+- tag distributions,
+- and uncovered/high-risk tests.
+
+This is **test-catalog coverage**, not source-code coverage.
+
+### Risk Debt Index
+
+Risk Debt measures the proportion of relevant high-risk testing value that was deferred because of the time budget.
+
+It is an index, not a probability of production failure.
+
+### Recommendations
+
+The recommender summarizes:
+
+- number of selected tests,
+- total execution time,
+- available budget,
+- remaining time,
+- and notable coverage/recommendation information.
 
 ---
 
 ## Git Auto
 
-**Git Auto** provides autonomous regression testing triggered directly by Git version control events.
-
-### End-to-End Lifecycle
-1. **GitHub Push Event:** A developer runs `git push origin feature-branch`.
-2. **Webhook Receipt:** GitHub delivers a POST request to `/api/github/webhook` with the `X-Hub-Signature-256` header.
-3. **Signature Verification:** The backend verifies the HMAC-SHA256 signature using `GITHUB_WEBHOOK_SECRET`.
-4. **Project Lookup:** Resolves the `GitProject` record matching `repo_owner`, `repo_name`, and `installation_id`.
-5. **Compare API Invocation:** The backend mints a short-lived RS256 JWT, requests an installation token, and queries GitHub's Compare API (`/repos/{owner}/{repo}/compare/{before}...{after}`).
-6. **Change Analysis:** `src/github_change_analyzer.py` extracts changed file names, patch diffs, and commit messages to deduce affected modules, features, and risk areas.
-7. **Pipeline Execution:** Synthesized change summaries are fed into `run_git_impact`, which executes the optimization pipeline against the repository's uploaded test catalog and default budget.
-8. **Persistence:** Results are stored in the `git_runs` table (`status="completed"` or `"failed"`).
-9. **UI Inspection & Deletion:** Developers inspect commit changes, affected modules, selected tests, and risk debt in the Git Auto dashboard, with the ability to delete individual runs securely.
-
----
-
-## GitHub Integration
-
-The GitHub integration connects directly to the GitHub REST API using GitHub App credentials:
-
-- **App Authentication (RS256):** Handled in `backend/github_client.py`. Generates an asymmetric RSA JWT signed by the App's private `.pem` key.
-- **Installation Access Token:** Uses the JWT to request an ephemeral installation token via `POST https://api.github.com/app/installations/{installation_id}/access_tokens`.
-- **Compare API:** Queries `GET https://api.github.com/repos/{owner}/{repo}/compare/{before}...{after}` to obtain the list of changed files, commit count, and line diffs (`patch`).
-- **Webhook Security:** Webhook payloads are verified in `backend/github_webhook.py` using `hmac.compare_digest` against `sha256=<hex_digest>`.
-
----
-
-## Backend API
-
-### Endpoint Summary Table
-
-| Method | Endpoint | Purpose | Authentication |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/` | Root service status message | Public |
-| `GET` | `/health` | API health check endpoint | Public |
-| `POST` | `/api/auth/register` | Register new user & send email OTP | Public |
-| `POST` | `/api/auth/verify-otp` | Verify 6-digit email OTP | Public |
-| `POST` | `/api/auth/resend-otp` | Invalidate previous OTP & resend new code | Public |
-| `POST` | `/api/auth/login` | Authenticate user & issue session cookie | Public |
-| `GET` | `/api/auth/me` | Fetch currently authenticated user | Session Cookie |
-| `POST` | `/api/auth/logout` | Destroy session in DB & clear cookie | Session Cookie |
-| `POST` | `/api/optimize` | Run regression optimization pipeline | Session Cookie |
-| `GET` | `/api/history` | List user's historical regression runs | Session Cookie |
-| `GET` | `/api/history/{run_id}` | Fetch details & selected tests for a run | Session Cookie |
-| `POST` | `/api/github/webhook` | Ingest GitHub push events | HMAC-SHA256 Header |
-| `POST` | `/api/git-impact/setup` | Register/update a Git Auto repository | Session Cookie |
-| `GET` | `/api/git-impact/project` | Fetch user's configured Git Auto project | Session Cookie |
-| `GET` | `/api/git-impact/runs` | List user's Git Auto runs | Session Cookie |
-| `GET` | `/api/git-impact/runs/{run_id}` | Fetch detailed Git Auto run results | Session Cookie |
-| `DELETE` | `/api/git-impact/runs/{run_id}` | Delete a specific Git Auto run | Session Cookie |
-
----
-
-## Database Design
-
-Implemented with SQLAlchemy 2.0 and MySQL.
+Git Auto automatically starts regression analysis from GitHub push events.
 
 ```mermaid
-erDiagram
-    users ||--o{ otp_verifications : "has"
-    users ||--o{ user_sessions : "maintains"
-    users ||--o{ regression_runs : "executes"
-    users ||--o{ git_projects : "owns"
-    regression_runs ||--o{ regression_results : "contains (CASCADE)"
-    git_projects ||--o{ git_runs : "triggers (CASCADE)"
+flowchart TD
+    Developer["Developer"] -->|"git push"| GitHub["GitHub Repository"]
+    GitHub -->|"Push Webhook"| Webhook["backend/github_webhook.py"]
 
-    users {
-        int id PK
-        string name
-        string email UK
-        string password_hash
-        boolean email_verified
-        datetime created_at
-    }
+    Webhook --> Signature{"Verify HMAC-SHA256"}
+    Signature -->|"Invalid"| Reject["401 Unauthorized"]
+    Signature -->|"Valid"| Client["backend/github_client.py"]
 
-    regression_runs {
-        int id PK
-        int user_id FK
-        int run_number
-        text change_description
-        int time_budget
-        int total_tests
-        int selected_tests
-        int execution_time
-        datetime created_at
-    }
+    Client --> AppAuth["GitHub App Authentication"]
+    AppAuth --> Compare["GitHub Compare API"]
 
-    regression_results {
-        int id PK
-        int run_id FK
-        string test_id
-        string module
-        int duration
-        float priority_score
-        float relevance_score
-    }
+    Compare --> ChangeAnalyzer["github_change_analyzer.py"]
+    ChangeAnalyzer --> Impact["git_impact_service.py"]
+    Impact --> Pipeline["run_pipeline()"]
 
-    git_projects {
-        int id PK
-        int user_id FK
-        string repo_owner
-        string repo_name
-        string installation_id
-        int default_budget
-        string catalog_path
-    }
-
-    git_runs {
-        int id PK
-        int git_project_id FK
-        string commit_sha
-        string branch
-        text commit_message
-        text changed_files
-        text change_description
-        text result_json
-        int budget
-        string status
-        datetime created_at
-    }
+    Pipeline --> DB[("MySQL<br/>git_projects + git_runs")]
+    DB --> UI["React Git Auto Dashboard"]
 ```
 
-### Cascade Deletions & Referential Integrity
-- `regression_runs.user_id` → `users.id` with `ON DELETE CASCADE`.
-- `regression_results.run_id` → `regression_runs.id` with `ON DELETE CASCADE`.
-- `git_projects.user_id` → `users.id` with `ON DELETE CASCADE`.
-- `git_runs.git_project_id` → `git_projects.id` with `ON DELETE CASCADE`.
-- Deleting an account or a project automatically cleans up all associated runs and results, preventing orphaned rows.
+### Git Auto lifecycle
+
+1. A developer pushes a change to GitHub.
+2. GitHub sends a `push` webhook.
+3. The backend verifies `X-Hub-Signature-256`.
+4. The configured Git project is resolved.
+5. The GitHub App creates a short-lived App JWT.
+6. An installation access token is obtained.
+7. The GitHub Compare API provides changed files and diffs.
+8. `github_change_analyzer.py` interprets the change.
+9. `git_impact_service.py` passes the synthesized change description into the existing pipeline.
+10. The same optimizer runs.
+11. A `GitRun` record is stored.
+12. The frontend displays the run and its results.
+
+### Important architectural point
+
+Git Auto does **not** have a separate optimization engine.
+
+Both entry points eventually use:
+
+```text
+run_pipeline()
+```
+
+That keeps manual and Git-triggered optimization behavior consistent.
 
 ---
 
 ## Authentication and Security
 
-- **Argon2 Password Hashing:** Uses `argon2-cffi` with salt and memory-hard parameters for user passwords and stored OTP hashes.
-- **Stateful Database Sessions:** Authentication uses a 32-byte cryptographically secure random token (`secrets.token_urlsafe(32)`). Only the SHA-256 hash of the token is persisted in `user_sessions`.
-- **HTTP-Only Cookies:** Session tokens are delivered via an HTTP-only cookie (`srso_session`, `SameSite=Lax`, 7-day expiration). JavaScript cannot access the raw cookie, preventing XSS-based session theft.
-- **OTP Verification:** 6-digit random codes (`secrets.randbelow(1_000_000)`), valid for 10 minutes with a 5-attempt brute-force limit.
-- **Ownership Scoping:** All API endpoints (`/api/history/{id}`, `/api/git-impact/runs/{id}`, DELETE routes) explicitly verify that requested resources belong to the requesting user's ID.
-- **Webhook Integrity:** Inbound GitHub webhooks require valid `X-Hub-Signature-256` matching the SHA-256 HMAC of the request body.
+SRSO uses stateful database-backed sessions.
+
+### Passwords
+
+Passwords are hashed with Argon2 and are never stored as plaintext.
+
+### Session cookies
+
+Authentication uses an HTTP-only session cookie.
+
+The raw session token is generated securely and the database stores its hash.
+
+### Email OTP
+
+Registration uses a six-digit email OTP with expiration and attempt limits.
+
+### Ownership checks
+
+History and Git Auto resources are scoped to the authenticated user.
+
+A user must not be able to access another user's run by changing an ID in the URL.
+
+### GitHub webhook verification
+
+Incoming GitHub webhook payloads are verified using an HMAC-SHA256 signature.
+
+### Secrets
+
+Do not commit:
+
+```text
+.env
+GitHub private keys
+Gemini API keys
+OpenAI API keys
+SMTP credentials
+Webhook secrets
+```
+
+Use `.gitignore` and local environment configuration for development.
 
 ---
 
-## Frontend Architecture
+## Project Structure
 
-The frontend is a single-page application built with React 19, Vite, and Tailwind CSS.
-
-### Pages and Views
-- **`Login.jsx`** & **`Register.jsx`**: Email and password authentication with client-side validation.
-- **`VerifyOTP.jsx`**: 6-digit code entry interface with resend countdown timer.
-- **`Dashboard.jsx`**: Core optimizer interface containing:
-  - `StatsCards`: Displays total tests, selected count, execution time, and budget utilization.
-  - `OptimizationForm`: File uploader, change description textarea, and budget input.
-  - `SelectedTestsTable`: Detailed table of recommended tests with duration, priority badges, and scores.
-  - `HighRiskTests`: Alert table of high-risk tests excluded by budget constraints.
-  - `CoverageSection`: Visual progress bars for module coverage and tag distribution pills.
-  - `RegressionRiskDebt`: Risk debt index gauge, deferred execution time, and affected modules.
-  - `AIReasoning`: Expandable cards explaining selection and exclusion rationales.
-- **`GitAuto.jsx`**: Repository configuration, run history, and detailed commit inspection.
-- **`History.jsx`**: Tabular listing of previous runs with modal inspection.
-- **`InputFormat.jsx`**: Live interactive documentation of required CSV columns and format rules.
-- **`Settings.jsx`**: User account details and configuration summaries.
+```text
+Smart-Regression-Suite-Optimizer/
+│
+├── backend/
+│   ├── api.py
+│   ├── auth.py
+│   ├── auth_routes.py
+│   ├── database.py
+│   ├── git_models.py
+│   ├── git_routes.py
+│   ├── github_client.py
+│   ├── github_webhook.py
+│   ├── history_routes.py
+│   ├── migrate_run_numbers_and_cascades.py
+│   ├── models.py
+│   ├── otp_service.py
+│   ├── schemas.py
+│   └── session.py
+│
+├── data/
+│   └── test_cases.csv
+│
+├── frontend/
+│   ├── src/
+│   │   ├── api.js
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   │   ├── components/
+│   │   │   ├── auth/
+│   │   │   ├── dashboard/
+│   │   │   ├── git-auto/
+│   │   │   └── layout/
+│   │   ├── context/
+│   │   │   └── AuthContext.jsx
+│   │   ├── pages/
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── GitAuto.jsx
+│   │   │   ├── History.jsx
+│   │   │   ├── InputFormat.jsx
+│   │   │   ├── Login.jsx
+│   │   │   ├── Register.jsx
+│   │   │   ├── Settings.jsx
+│   │   │   └── VerifyOTP.jsx
+│   │   └── utils/
+│   │       └── date.js
+│   ├── package.json
+│   └── vite.config.js
+│
+├── src/
+│   ├── ai_explainer.py
+│   ├── ai_matcher.py
+│   ├── ai_provider.py
+│   ├── coverage_analyzer.py
+│   ├── data_loader.py
+│   ├── exclusion_analyzer.py
+│   ├── git_impact_service.py
+│   ├── github_change_analyzer.py
+│   ├── optimizer.py
+│   ├── pipeline.py
+│   ├── prioritizer.py
+│   ├── recommender.py
+│   └── risk_debt_analyzer.py
+│
+├── tests/
+│   ├── conftest.py
+│   ├── test_ai_explainer.py
+│   ├── test_ai_matcher.py
+│   ├── test_api.py
+│   ├── test_coverage_analyzer.py
+│   ├── test_data_loader.py
+│   ├── test_exclusion_analyzer.py
+│   ├── test_git_auto_fixes.py
+│   ├── test_git_impact_service.py
+│   ├── test_github_change_analyzer.py
+│   ├── test_optimizer.py
+│   ├── test_pipeline.py
+│   ├── test_prioritizer.py
+│   ├── test_recommender.py
+│   ├── test_risk_debt_analyzer.py
+│   └── test_run_numbering_and_cascade.py
+│
+├── PLAN.md
+├── REQUIREMENTS.md
+└── requirements.txt
+```
 
 ---
 
-## Test Case Data Format
+## Core Python Modules
 
-The test catalog must be provided as a CSV file with the following required columns:
+| File | Responsibility |
+|---|---|
+| `data_loader.py` | Load and validate regression-test catalogs |
+| `ai_provider.py` | Resolve Mock, OpenAI, or Gemini provider |
+| `ai_matcher.py` | Change-to-test relevance matching |
+| `prioritizer.py` | Deterministic multi-factor scoring |
+| `optimizer.py` | 0/1 Knapsack dynamic programming |
+| `exclusion_analyzer.py` | High-risk excluded tests |
+| `coverage_analyzer.py` | Module and tag coverage |
+| `risk_debt_analyzer.py` | Deferred high-risk testing index |
+| `recommender.py` | Human-readable recommendation summary |
+| `ai_explainer.py` | Natural-language trade-off explanations |
+| `pipeline.py` | Orchestrates the full optimization flow |
+| `github_change_analyzer.py` | Git change interpretation |
+| `git_impact_service.py` | Connects Git changes to the optimization pipeline |
 
-| Column Name | Type | Description | Validation Rule |
-| :--- | :--- | :--- | :--- |
-| `test_id` | String | Unique test identifier | Must be unique across all rows |
-| `module` | String | System functional module | Non-empty string |
-| `description` | String | Plain-English test scenario | Non-empty string |
-| `priority` | String | Business priority level | Must be exactly `High`, `Medium`, or `Low` |
-| `duration` | Integer | Execution duration in minutes | Must be a strictly positive integer (> 0) |
-| `tags` | String | Comma-delimited descriptive tags | Non-empty string (e.g., `"payment,upi"`) |
-| `historical_failure_count` | Integer | Historical test failure frequency | Must be a non-negative integer (≥ 0) |
+---
 
-### Example CSV (`data/test_cases.csv`)
+## Backend API
+
+### General
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/` | Service status |
+| `GET` | `/health` | Health check |
+| `POST` | `/api/optimize` | Run the regression optimizer |
+
+### Authentication
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `POST` | `/api/auth/register` | Register and send OTP |
+| `POST` | `/api/auth/verify-otp` | Verify email OTP |
+| `POST` | `/api/auth/resend-otp` | Resend OTP |
+| `POST` | `/api/auth/login` | Create session |
+| `GET` | `/api/auth/me` | Current authenticated user |
+| `POST` | `/api/auth/logout` | End session |
+
+### History
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/api/history` | List user's regression runs |
+| `GET` | `/api/history/{run_id}` | Inspect one run |
+
+### Git Auto
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `POST` | `/api/git-impact/setup` | Configure/update Git repository |
+| `GET` | `/api/git-impact/project` | Get Git Auto configuration |
+| `GET` | `/api/git-impact/runs` | List Git Auto runs |
+| `GET` | `/api/git-impact/runs/{run_id}` | Get Git Auto run details |
+| `DELETE` | `/api/git-impact/runs/{run_id}` | Delete an owned Git Auto run |
+
+### GitHub
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `POST` | `/api/github/webhook` | Receive verified GitHub push events |
+
+---
+
+## Test Catalog Format
+
+The default catalog uses these columns:
+
+| Column | Type | Validation |
+|---|---|---|
+| `test_id` | String | Unique |
+| `module` | String | Non-empty |
+| `description` | String | Non-empty |
+| `priority` | String | `High`, `Medium`, or `Low` |
+| `duration` | Integer | Greater than zero |
+| `tags` | String | Non-empty |
+| `historical_failure_count` | Integer | Zero or greater |
+
+Example:
+
 ```csv
 test_id,module,description,priority,duration,tags,historical_failure_count
 TC001,Authentication,Verify login with valid credentials,High,5,"authentication,login,success",4
@@ -619,136 +762,45 @@ TC017,Payment,Verify payment refund processing,High,14,"payment,refund",11
 
 ---
 
-## Main API Request Example
-
-### Optimization Request
-```bash
-curl -X POST "http://localhost:8000/api/optimize" \
-  -b "srso_session=<YOUR_SESSION_TOKEN>" \
-  -F "file=@data/test_cases.csv" \
-  -F "change_description=Updated UPI payment gateway and checkout timeout handling" \
-  -F "time_budget=30"
-```
-
-### Expected Response Structure
-```json
-{
-  "run_id": 42,
-  "run_number": 3,
-  "summary": {
-    "total_tests": 20,
-    "selected_count": 4,
-    "excluded_high_risk_count": 1,
-    "other_excluded_count": 15
-  },
-  "selected_tests": [
-    {
-      "test_id": "TC014",
-      "module": "Payment",
-      "duration": 7,
-      "priority": "High",
-      "priority_score": 94.0,
-      "relevance_score": 100.0,
-      "selected": true
-    },
-    {
-      "test_id": "TC013",
-      "module": "Payment",
-      "duration": 8,
-      "priority": "High",
-      "priority_score": 90.67,
-      "relevance_score": 100.0,
-      "selected": true
-    },
-    {
-      "test_id": "TC015",
-      "module": "Payment",
-      "duration": 15,
-      "priority": "High",
-      "priority_score": 89.0,
-      "relevance_score": 100.0,
-      "selected": true
-    }
-  ],
-  "excluded_high_risk_tests": [
-    {
-      "test_id": "TC017",
-      "module": "Payment",
-      "priority": "High",
-      "duration": 14,
-      "relevance_score": 75.0,
-      "historical_failure_count": 11
-    }
-  ],
-  "coverage": {
-    "total_tests": 20,
-    "total_selected_tests": 3,
-    "module_coverage": {
-      "Payment": {
-        "total_tests": 5,
-        "selected_tests": 3,
-        "coverage_percentage": 60.0,
-        "status": "Partially Covered"
-      }
-    },
-    "uncovered_modules": ["Authentication", "Cart", "Orders", "Search"]
-  },
-  "recommendation": {
-    "total_selected_tests": 3,
-    "total_execution_time": 30,
-    "time_budget": 30,
-    "remaining_time": 0,
-    "recommendations": [
-      "Payment has the highest selected-test coverage.",
-      "The available execution budget is fully used."
-    ]
-  },
-  "risk_debt": {
-    "has_debt": true,
-    "high_risk_excluded": 1,
-    "risk_debt_index": 21.4,
-    "deferred_time": 14,
-    "deferred_modules": ["Payment"]
-  },
-  "ai_explanations": {
-    "selected_reasons": {
-      "TC014": "TC014 was selected because it is relevant to the change and has a High priority with a 7-minute execution time."
-    },
-    "excluded_reasons": {
-      "TC017": "TC017 is a high-risk test, but it was excluded because the available execution budget limited the regression suite."
-    },
-    "overall_tradeoff": "The selected suite balances test relevance, priority, historical failure risk, and the available execution-time budget."
-  }
-}
-```
-
----
-
 ## Installation
 
-### 1. Clone the Repository
+### Prerequisites
+
+- Python 3.10+
+- Node.js 18+
+- npm
+- MySQL
+
+### 1. Clone
+
 ```bash
 git clone https://github.com/Rakshithh-K/Smart-Regression-Suite-Optimizer.git
 cd Smart-Regression-Suite-Optimizer
 ```
 
-### 2. Backend Setup
-**Prerequisites:** Python 3.10 or higher, MySQL server.
+### 2. Create Python environment
+
+Windows PowerShell:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+Linux/macOS:
 
 ```bash
-# Create and activate virtual environment
 python -m venv .venv
-# On Windows PowerShell:
-.venv\Scripts\Activate.ps1
-# On Linux / macOS:
 source .venv/bin/activate
+```
 
-# Install dependencies
+### 3. Install backend dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
-### 3. Frontend Setup
-**Prerequisites:** Node.js 18+ and npm.
+### 4. Install frontend dependencies
 
 ```bash
 cd frontend
@@ -758,207 +810,343 @@ cd ..
 
 ---
 
-## Environment Variables
+## AI Provider Configuration
 
-Create a `.env` file in the repository root directory:
+Create a `.env` file in the repository root.
 
-| Variable | Purpose | Required | Default / Example |
-| :--- | :--- | :---: | :--- |
-| `AI_PROVIDER` | AI backend provider mode (`mock` or `openai`) | No | `mock` |
-| `OPENAI_API_KEY` | OpenAI API key for semantic matching | Only if `AI_PROVIDER=openai` | `sk-...` |
-| `MYSQL_HOST` | MySQL database hostname | No | `localhost` |
-| `MYSQL_PORT` | MySQL database port | No | `3306` |
-| `MYSQL_USER` | MySQL database user | No | `root` |
-| `MYSQL_PASSWORD` | MySQL database password | Yes | `your_mysql_password` |
-| `MYSQL_DATABASE` | MySQL database schema name | No | `srso` |
-| `SMTP_HOST` | SMTP server for OTP emails | No | `smtp.gmail.com` |
-| `SMTP_PORT` | SMTP port | No | `587` |
-| `SMTP_USER` | SMTP email address | Yes (for OTP) | `your_email@gmail.com` |
-| `SMTP_PASSWORD` | SMTP app-specific password | Yes (for OTP) | `your_app_password` |
-| `GITHUB_APP_ID` | GitHub App ID for Git Auto | Yes (for Git Auto) | `123456` |
-| `GITHUB_PRIVATE_KEY_PATH`| Path to GitHub App `.pem` private key | Yes (for Git Auto) | `backend/secrets/app.pem` |
-| `GITHUB_WEBHOOK_SECRET` | Secret for HMAC webhook verification | Yes (for Git Auto) | `your_webhook_secret` |
+### Mock mode
+
+```env
+AI_PROVIDER=mock
+```
+
+This is deterministic and does not require an external AI API.
+
+### Gemini mode
+
+```env
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_MODEL=gemini-3.8-flash
+GEMINI_FALLBACK_MODELS=gemini-3.6-flash
+```
+
+### OpenAI mode
+
+```env
+AI_PROVIDER=openai
+OPENAI_API_KEY=your_openai_api_key
+```
+
+Other backend variables include database, SMTP, and GitHub App configuration.
+
+Never commit your real `.env` file.
 
 ---
 
-## Running the Project
+## Running Locally
 
-### 1. Database Setup & Migrations
-Ensure MySQL is running with database `srso` created:
-```sql
-CREATE DATABASE IF NOT EXISTS srso;
-```
-Run the migration script to apply per-user run numbering and cascade foreign keys:
-```bash
-python -m backend.migrate_run_numbers_and_cascades
-```
+### Backend
 
-### 2. Start the Backend Server
+From the repository root:
+
 ```bash
 uvicorn backend.api:app --reload --host 127.0.0.1 --port 8000
 ```
-API Documentation will be available at: `http://127.0.0.1:8000/docs`
 
-### 3. Start the Frontend Server
-In a separate terminal:
+API documentation:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+### Frontend
+
+In another terminal:
+
 ```bash
 cd frontend
 npm run dev
 ```
-Access the application at: `http://localhost:5173`
+
+Open:
+
+```text
+http://localhost:5173
+```
+
+---
+
+## Example Optimization Request
+
+The backend accepts the uploaded catalog, change description, and budget as multipart form data.
+
+Example:
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/optimize" \
+  -b "srso_session=<YOUR_SESSION_TOKEN>" \
+  -F "file=@data/test_cases.csv" \
+  -F "change_description=Updated UPI payment gateway and checkout timeout handling" \
+  -F "time_budget=30"
+```
 
 ---
 
 ## Testing
 
-The project includes 40 comprehensive automated tests covering unit logic, integration pipelines, API endpoints, algorithms, and security boundaries.
+The project currently has:
 
-### Test Execution Command
-Run the test suite from the repository root:
+```text
+40 automated tests
+40 passed
+```
+
+Run the complete suite with:
+
 ```bash
 python -m pytest -v
 ```
 
-### Test Suite Structure (40 Passing Tests)
-- **`tests/test_data_loader.py`**: Verifies CSV validation, duplicate ID detection, and error handling for missing/invalid columns.
-- **`tests/test_prioritizer.py`**: Validates exact formula weights (0.50 / 0.30 / 0.20), priority scoring values, and failure rate normalization.
-- **`tests/test_optimizer.py`**: Validates 0/1 knapsack compliance with budget limits, optimal subset selection, and invalid budget handling.
-- **`tests/test_coverage_analyzer.py`**: Tests module status assignment (`Fully Covered`, `Partially Covered`, `Not Covered`) and tag aggregation.
-- **`tests/test_exclusion_analyzer.py`**: Tests high-risk exclusion criteria (`High` priority + relevance ≥ 50).
-- **`tests/test_risk_debt_analyzer.py`**: Confirms Risk Debt Index calculations and deferred execution time sums.
-- **`tests/test_recommender.py`**: Tests budget surplus calculation and module coverage summary strings.
-- **`tests/test_ai_matcher.py`** & **`tests/test_ai_explainer.py`**: Tests mock AI scoring rules and explanation structures.
-- **`tests/test_github_change_analyzer.py`** & **`tests/test_git_impact_service.py`**: Verifies commit message parsing and Git impact pipeline orchestration.
-- **`tests/test_api.py`**: Tests FastAPI upload endpoints, validation errors, and health routes.
-- **`tests/test_run_numbering_and_cascade.py`**: Tests per-user sequential run numbering (`Run #1`, `Run #2`) and cascade deletion of regression runs and results on user deletion.
-- **`tests/test_git_auto_fixes.py`**: 10 dedicated security and regression tests verifying:
-  - Multi-project run lookups.
-  - Cross-user run access protection (404 on foreign runs).
-  - Setup de-duplication (updating existing projects).
-  - Safe handling of failed and legacy runs with missing `result_json`.
-  - Scoped run deletion without affecting other runs or projects.
+The test suite covers:
 
----
+- data validation,
+- AI matcher behavior,
+- AI explanation structure,
+- prioritization,
+- Knapsack optimization,
+- coverage analysis,
+- exclusion analysis,
+- risk debt,
+- recommendations,
+- FastAPI APIs,
+- Git change analysis,
+- Git impact orchestration,
+- Git Auto ownership and deletion rules,
+- run-number isolation,
+- and cascade behavior.
 
-## Important Bugs and Engineering Fixes
-
-During the development and testing of SRSO, several non-trivial engineering bugs were isolated, fixed, and verified:
-
-### 1. Global DB Auto-Increment Leak in Run Numbers
-- **Problem:** When a new user registered and executed their first regression run, the UI displayed `Run #17` instead of `Run #1` because the database table's global primary key was being exposed.
-- **Root Cause:** The `regression_runs` table lacked a per-user sequential counter.
-- **Fix:** Added a `run_number` column to `RegressionRun`. In `backend/api.py`, the run number is computed as `(last_run.run_number + 1) if last_run else 1` scoped strictly to `user_id`.
-- **Verification:** Verified by `tests/test_run_numbering_and_cascade.py`.
-
-### 2. Multi-Project Run Lookup 404 Bug in Git Auto
-- **Problem:** Users who configured more than one Git Auto repository received a `404 Not Found` when attempting to view runs belonging to their second repository.
-- **Root Cause:** In `backend/git_routes.py`, `get_git_run` called `db.query(GitProject).filter(GitProject.user_id == current_user.id).first()`, which retrieved only the user's *first* project. If a run belonged to the user's *second* project, the validation check rejected it.
-- **Fix:** Refactored queries to fetch all project IDs owned by the user (`projects = db.query(GitProject).filter(GitProject.user_id == current_user.id).all()`) and validated using `GitRun.git_project_id.in_(project_ids)`.
-- **Verification:** Verified in `tests/test_git_auto_fixes.py::test_user_with_multiple_git_projects_can_open_run`.
-
-### 3. Duplicate GitProject Records on Repository Reconfiguration
-- **Problem:** Re-submitting the Git Auto setup form for an existing repository inserted duplicate project records in MySQL, leading to ambiguous webhook routing.
-- **Root Cause:** `setup_git_project` lacked an upsert check for `(user_id, repo_owner, repo_name)`.
-- **Fix:** Added a check for existing projects. If found, existing fields (`installation_id`, `default_budget`, `catalog_path`) are updated in-place rather than inserting a new row.
-- **Verification:** Verified in `tests/test_git_auto_fixes.py::test_setup_updates_existing_project_instead_of_duplicates`.
-
-### 4. Application Crash on Legacy or Failed Git Runs with Missing Result JSON
-- **Problem:** Opening a failed Git Auto run or legacy record with `result_json = None` caused a 500 server error and crashed the frontend view.
-- **Root Cause:** Unconditional call to `json.loads(run.result_json)`.
-- **Fix:** Guarded deserialization with fallback defaults: `json.loads(run.result_json or "{}")`. Updated the frontend `GitRunDetails` component to display failure alerts gracefully.
-- **Verification:** Verified in `tests/test_git_auto_fixes.py::test_failed_git_run_can_be_displayed_without_optimization_result`.
-
-### 5. Git Auto Run Deletion Scoping
-- **Problem:** Deleting a Git Auto run needed to ensure that users could not delete runs belonging to other users, and that deleting a run did not cascade to delete other runs or the parent project.
-- **Root Cause:** Deletion endpoint needed strict multi-project ownership verification.
-- **Fix:** Implemented `DELETE /api/git-impact/runs/{run_id}` requiring `GitRun.git_project_id.in_(project_ids)` where `project_ids` belong to `current_user.id`.
-- **Verification:** Verified in `tests/test_git_auto_fixes.py::test_authenticated_user_can_delete_own_run` and `test_user_cannot_delete_another_users_run`.
+`tests/conftest.py` keeps the automated test suite independent of live AI-service availability by using the deterministic mock provider.
 
 ---
 
 ## Error Handling
 
-| Scenario | HTTP Status | Response / Behavior |
-| :--- | :---: | :--- |
-| **Missing required CSV columns** | `400 Bad Request` | `{"detail": "Missing required columns: ['module', 'duration']"}` |
-| **Invalid priority value in CSV** | `400 Bad Request` | `{"detail": "Invalid priority values: {'Urgent'}"}` |
-| **Non-positive duration in CSV** | `400 Bad Request` | `{"detail": "Duration must be greater than zero."}` |
-| **Time budget ≤ 0** | `400 Bad Request` | `{"detail": "Time budget must be greater than 0."}` |
-| **Unauthenticated request** | `401 Unauthorized` | `{"detail": "Not authenticated."}` |
-| **Accessing another user's run** | `404 Not Found` | `{"detail": "Git Impact run not found."}` (Prevents ID enumeration) |
-| **Invalid webhook signature** | `401 Unauthorized` | `{"detail": "Invalid GitHub webhook signature."}` |
-| **Unconfigured repository webhook**| `404 Not Found` | `{"detail": "No Git Impact project is configured for this repository."}` |
-| **AI Provider failure** | Graceful fallback | Transparently falls back to local deterministic mock matching without failing. |
+Typical validation and authorization responses include:
+
+| Scenario | Status |
+|---|---:|
+| Missing required CSV columns | `400` |
+| Invalid priority | `400` |
+| Non-positive duration | `400` |
+| Invalid time budget | `400` |
+| Unauthenticated request | `401` |
+| Invalid GitHub webhook signature | `401` |
+| Unowned Git Auto run | `404` |
+| Unknown Git Auto repository | `404` |
+
+A temporary AI-provider failure should be handled by the configured AI-provider logic and fallback configuration rather than changing the deterministic optimizer itself.
+
+---
+
+## Engineering Fixes
+
+Several important bugs were identified and fixed during development.
+
+### Git Auto run lookup
+
+A run belonging to a user's second configured repository could previously return `404`.
+
+The fix validates runs against all Git projects owned by the authenticated user instead of checking only the first project.
+
+### Git Auto project duplication
+
+Re-submitting the same repository configuration previously created duplicate `GitProject` records.
+
+The setup flow now updates an existing `(user, owner, repository)` configuration instead of creating duplicates.
+
+### Legacy/failed Git Auto results
+
+Git runs with missing result JSON previously caused an error while opening the details page.
+
+The backend and frontend now handle incomplete/failed run records safely.
+
+### Git Auto run deletion
+
+Run deletion is ownership-scoped so users can delete their own run without affecting other users' runs or the parent project.
+
+### Timestamp display
+
+Backend timestamps are stored as UTC. The frontend normalizes backend timestamps and displays them in the user's local timezone.
+
+---
+
+## Database Design
+
+Major entities:
+
+```mermaid
+erDiagram
+    users ||--o{ otp_verifications : has
+    users ||--o{ user_sessions : maintains
+    users ||--o{ regression_runs : executes
+    users ||--o{ git_projects : owns
+    regression_runs ||--o{ regression_results : contains
+    git_projects ||--o{ git_runs : triggers
+```
+
+### Main tables
+
+- `users`
+- `otp_verifications`
+- `user_sessions`
+- `regression_runs`
+- `regression_results`
+- `git_projects`
+- `git_runs`
+
+Foreign-key relationships use cascading behavior where configured so dependent records are not left orphaned.
 
 ---
 
 ## End-to-End Example
 
-### Step-by-Step Flow:
-1. **Semantic Matching:**
-   - Tests tagged with `"payment"`, `"upi"`, `"checkout"` (such as `TC013`, `TC014`, `TC015`, `TC016`, `TC017`) match keywords and receive high relevance scores (75–100).
-   - Tests for unrelated modules (e.g., `TC020` Search, `TC006` Cart) receive lower relevance scores (0–50).
-2. **Prioritization Scoring:**
-   - `TC014` (Payment Failure, `High` priority = 100, 12 historical failures = maximum in catalog):
-     Score = (100 × 0.50) + (100 × 0.30) + (100 × 0.20) = 50 + 30 + 20 = **100.0**
-   - `TC013` (Payment Success, `High` priority = 100, 10 historical failures):
-     Score = (100 × 0.50) + (100 × 0.30) + (83.3 × 0.20) = 50 + 30 + 16.67 = **96.67**
-3. **0/1 Knapsack Optimization:**
-   - With a 30-minute budget, the optimizer evaluates test combinations.
-   - It selects `TC014` (7 min), `TC013` (8 min), and `TC015` (15 min).
-   - Total selected duration: 7 + 8 + 15 = 30 minutes (100% budget utilization).
-4. **Exclusion & Risk Debt Analysis:**
-   - `TC017` (Payment Refund, duration = 14 min, `High` priority, relevance = 75) could not fit without exceeding the 30-minute budget.
-   - Identified as an **Excluded High-Risk Test**.
-   - **Risk Debt Index:** ≈21.4%, with 14 minutes of deferred high-risk execution time flagged to the engineer.
-5. **Coverage:**
-   - Module `Payment` is marked as **Partially Covered** (60%).
-   - Modules `Authentication`, `Cart`, `Orders`, and `Search` are flagged as **Uncovered Modules**.
-6. **AI Explanation Generated:**
-   > *"TC014 and TC013 were selected due to direct relevance to payment processing changes and high historical failure signals. TC017 was deferred because its 14-minute execution duration exceeded the remaining budget."*
+Suppose the change description is:
+
+```text
+Fix UPI payment failure handling
+```
+
+and the execution budget is:
+
+```text
+30 minutes
+```
+
+### Step 1: Relevance
+
+Payment-related tests receive higher relevance because their metadata matches the change.
+
+### Step 2: Deterministic scoring
+
+Each test receives a final priority score:
+
+```text
+0.50 × relevance
++ 0.30 × business priority
++ 0.20 × historical failure score
+```
+
+### Step 3: Optimization
+
+The Knapsack optimizer chooses the highest-value combination whose total duration is at most 30 minutes.
+
+### Step 4: Risk
+
+High-priority relevant tests that did not fit are listed as high-risk exclusions.
+
+### Step 5: Coverage
+
+The system identifies affected modules and tags that remain uncovered or only partially covered.
+
+### Step 6: Explanation
+
+The AI provider explains the trade-offs using the deterministic result.
 
 ---
 
-## Design Decisions and Trade-offs
+## Why the Design Uses Deterministic Optimization
 
-1. **Why React + FastAPI?**
-   - FastAPI provides native async support, fast serialization, and strict Pydantic type validation. React 19 provides modular component boundaries for complex data visualizations (gauges, progress bars, tables).
-2. **Why 0/1 Knapsack instead of Greedy Selection?**
-   - Greedy selection (sorting by score/duration ratio) can leave large chunks of unused time. Dynamic programming guarantees the mathematically optimal subset that maximizes testing value within the exact budget.
-3. **Why Restrict AI to Relevance & Explanation?**
-   - LLMs are non-deterministic and prone to hallucination. A regression optimizer must be reliable, repeatable, and strictly compliant with time limits. Deterministic algorithms ensure auditability.
-4. **Why HTTP-Only Cookie Sessions instead of LocalStorage JWTs?**
-   - Storing JWTs in `localStorage` exposes them to XSS attacks. HTTP-only cookies cannot be read by browser scripts. Hashing session tokens in MySQL ensures immediate server-side revocation on logout.
+A live AI model is useful for language understanding, but it is not the right component to enforce a hard execution budget.
+
+For example:
+
+```text
+AI:
+"These five tests look important."
+
+Deterministic optimizer:
+"Those five tests require 42 minutes.
+The budget is 30.
+Here is the mathematically best feasible subset."
+```
+
+This gives SRSO a clear separation between:
+
+- semantic understanding,
+- mathematical decision-making,
+- and human-readable explanation.
 
 ---
 
-## Limitations
+## Current Status
 
-- **Bounded Test Catalog:** The system is currently optimized and tested for test catalogs containing up to hundreds of tests. Enterprise suites with tens of thousands of tests would require heuristic knapsack approximations (e.g., FPTAS or genetic algorithms).
-- **Static Test Durations:** Execution durations are loaded from historical averages in the CSV catalog rather than real-time dynamic measurement.
-- **Mock AI vs. Live LLM:** The offline mock AI provider uses keyword matching, which does not detect deep synonyms (e.g., "remittance" ↔ "payment") without switching to `AI_PROVIDER=openai`.
-- **Single Active Git Project per View:** While the backend fully supports multiple Git projects per user, the setup UI currently focuses on managing one primary repository at a time.
+The local project currently includes:
+
+- manual regression optimization,
+- AI relevance matching,
+- deterministic prioritization,
+- 0/1 Knapsack optimization,
+- coverage analysis,
+- high-risk exclusion analysis,
+- Risk Debt Index,
+- AI explanations,
+- authentication and email OTP,
+- user-scoped history,
+- Git Auto GitHub integration,
+- Git Auto run inspection and deletion,
+- and 40 automated tests passing.
+
+---
+
+## Known Limitations
+
+The current implementation intentionally has a bounded scope.
+
+- It does not execute the selected tests itself.
+- It does not model test dependencies or required execution ordering.
+- The default challenge catalog is bounded around the original 20-test requirement.
+- Live AI services can experience rate limits or temporary service availability issues.
+- Production hardening such as HTTPS enforcement, API rate limiting, and CSRF protection should be completed before treating the system as a production service.
+- Git Auto webhook processing is currently synchronous.
+- Very large catalogs may require further optimization and batching strategies.
 
 ---
 
 ## Future Improvements
 
-- [ ] **CI/CD Test Runner Integration:** Automatically execute the selected regression tests in GitHub Actions or Jenkins and report live pass/fail results back to SRSO.
-- [ ] **Dynamic Vector Embeddings:** Utilize pgvector or ChromaDB with sentence-transformers for offline semantic matching without depending on OpenAI.
-- [ ] **Dynamic Flakiness Detection:** Ingest live JUnit/Allure XML reports to calculate moving-average failure rates dynamically.
-- [ ] **Multi-Repository Git Auto:** Allow toggling and filtering between multiple configured repositories within the Git Auto UI.
+Potential next steps include:
 
-## Contributing
+- semantic embeddings for richer test relevance matching,
+- support for larger test catalogs,
+- test dependency graphs,
+- asynchronous GitHub webhook processing,
+- CI/CD test execution integration,
+- stronger production security controls,
+- richer audit trails,
+- model/provider health monitoring,
+- and historical learning from actual test outcomes.
 
-Contributions, issues, and feature requests are welcome!
+---
 
-1. Fork the repository.
-2. Create your feature branch (`git checkout -b feature/amazing-feature`).
-3. Commit your changes (`git commit -m 'feat: add amazing feature'`).
-4. Push to the branch (`git push origin feature/amazing-feature`).
-5. Open a Pull Request.
+## Development Philosophy
 
-Make sure all 40 automated tests pass before submitting a pull request:
-```bash
-python -m pytest
-```
+SRSO was designed around three principles:
+
+### 1. Make the decision reproducible
+
+The final suite is produced by explicit scoring and optimization logic rather than an opaque model decision.
+
+### 2. Make deferred risk visible
+
+Tests that do not fit the budget are not silently discarded. High-risk exclusions, coverage gaps, and Risk Debt are surfaced.
+
+### 3. Use AI where it adds value
+
+AI handles language understanding and explanation. Deterministic code handles constraints and optimization.
+
+---
+
+## License
+
+This project is currently maintained as an engineering/hackathon project. Add a project-specific license here before distributing the repository publicly under a formal open-source license.
