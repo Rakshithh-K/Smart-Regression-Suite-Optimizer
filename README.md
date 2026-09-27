@@ -242,34 +242,36 @@ The optimization process executed by `src/pipeline.py::run_pipeline` follows 15 
 
 | Step | What Happens | Why It Exists | Input | Output | Implementation |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1. Test Loading** | Loads raw CSV file from disk into a Pandas DataFrame. | Ingests the test catalog for data processing. | File path | `pd.DataFrame` | [`src/data_loader.py:load_test_cases`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/data_loader.py#L19-L36) |
-| **2. Validation** | Checks required columns, non-empty rows, unique `test_id`, valid priority levels (`High`, `Medium`, `Low`), positive durations, non-negative failure counts. | Prevents pipeline crashes and corrupted calculations from bad data. | `pd.DataFrame` | Validated `pd.DataFrame` | [`src/data_loader.py:load_test_cases`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/data_loader.py#L38-L96) |
-| **3. Change Input** | Receives the plain-English description of the software change. | Provides the functional context of the modification. | String | Stripped String | [`backend/api.py:optimize`](file:///d:/9/Smart-Regression-Suite-Optimizer/backend/api.py#L108-L115) |
-| **4. Relevance Matching** | Matches change terms against test descriptions, modules, and tags. | Determines which tests have semantic relevance to the change. | DataFrame + Change Description | `dict[test_id, float]` (scores 0–100) | [`src/ai_matcher.py:calculate_relevance_scores`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/ai_matcher.py#L53-L124) |
-| **5. Prioritization** | Computes normalized failure scores and priority scores per test. | Synthesizes multiple engineering signals into a single ranking metric. | DataFrame + Relevance Scores | DataFrame with `priority_score` | [`src/prioritizer.py:prioritize_tests`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/prioritizer.py#L58-L96) |
-| **6. Score Calculation** | Applies exact weighting: $0.50 \times \text{Rel} + 0.30 \times \text{Prio} + 0.20 \times \text{Fail}$. | Balances change relevance against inherent risk and failure frequency. | Row metadata | Float (rounded to 2 decimals) | [`src/prioritizer.py:calculate_priority_score`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/prioritizer.py#L23-L56) |
-| **7. Optimization** | Solves 0/1 Knapsack via dynamic programming with capacity = `time_budget`. | Maximizes testing value without exceeding time limits. | Prioritized DataFrame + Budget | Filtered DataFrame (`selected=True`) | [`src/optimizer.py:optimize_regression_suite`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/optimizer.py#L4-L60) |
-| **8. Suite Selection** | Extracts selected test subset sorted by execution sequence. | Final set of tests designated for execution. | Selected DataFrame | Selected Test Rows | [`src/optimizer.py:optimize_regression_suite`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/optimizer.py#L54-L60) |
-| **9. Exclusion Analysis** | Filters tests not selected where `priority == "High"` and `relevance_score >= 50`. | Warns QA engineers about critical tests deferred due to budget limits. | All Tests + Selected Tests | `list[dict]` (High-risk exclusions) | [`src/exclusion_analyzer.py:analyze_exclusions`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/exclusion_analyzer.py#L7-L48) |
-| **10. Coverage Analysis** | Computes module coverage rates, uncovered modules, and tag frequencies. | Reveals testing blind spots across system modules. | All Tests + Selected Tests | Coverage metrics dictionary | [`src/coverage_analyzer.py:analyze_coverage`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/coverage_analyzer.py#L4-L132) |
-| **11. Risk Debt Analysis** | Measures the percentage of relevant high-risk score unexecuted. | Translates exclusions into an actionable "Risk Debt Index". | Excluded Tests + Prioritized Tests | Risk debt metrics dictionary | [`src/risk_debt_analyzer.py:calculate_risk_debt`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/risk_debt_analyzer.py#L4-L143) |
-| **12. Recommendations** | Generates summary metrics (unused budget, highest covered module). | Informs user whether budget was fully utilized or has slack. | Selected Tests + Coverage + Budget | Recommendations dictionary | [`src/recommender.py:generate_recommendation`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/recommender.py#L4-L60) |
-| **13. AI Explanations** | Prompts LLM (or mock) to generate trade-off reasoning in plain English. | Provides transparent auditability for human evaluators. | Selected + Excluded + Change + Budget | Explanations dictionary | [`src/ai_explainer.py:generate_ai_explanations`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/ai_explainer.py#L41-L121) |
-| **14. Backend Response** | Persists run & results to DB and returns JSON payload to client. | Records historical execution and provides API contract. | Pipeline outputs | Structured JSON response | [`backend/api.py:optimize`](file:///d:/9/Smart-Regression-Suite-Optimizer/backend/api.py#L190-L261) |
-| **15. Frontend View** | Renders stat cards, test tables, coverage progress bars, and risk alerts. | Provides an interactive dashboard for the QA engineer. | JSON response | Interactive UI view | [`frontend/src/pages/Dashboard.jsx`](file:///d:/9/Smart-Regression-Suite-Optimizer/frontend/src/pages/Dashboard.jsx) |
+| **1. Test Loading** | Loads raw CSV file from disk into a Pandas DataFrame. | Ingests the test catalog for data processing. | File path | `pd.DataFrame` | `src/data_loader.py:load_test_cases` |
+| **2. Validation** | Checks required columns, non-empty rows, unique `test_id`, valid priority levels (`High`, `Medium`, `Low`), positive durations, non-negative failure counts. | Prevents pipeline crashes and corrupted calculations from bad data. | `pd.DataFrame` | Validated `pd.DataFrame` | `src/data_loader.py:load_test_cases` |
+| **3. Change Input** | Receives the plain-English description of the software change. | Provides the functional context of the modification. | String | Stripped String | `backend/api.py:optimize` |
+| **4. Relevance Matching** | Matches change terms against test descriptions, modules, and tags. | Determines which tests have semantic relevance to the change. | DataFrame + Change Description | `dict[test_id, float]` (scores 0–100) | `src/ai_matcher.py:calculate_relevance_scores` |
+| **5. Prioritization** | Computes normalized failure scores and priority scores per test. | Synthesizes multiple engineering signals into a single ranking metric. | DataFrame + Relevance Scores | DataFrame with `priority_score` | `src/prioritizer.py:prioritize_tests` |
+| **6. Score Calculation** | Applies exact weighting: 0.50 × Rel + 0.30 × Prio + 0.20 × Fail. | Balances change relevance against inherent risk and failure frequency. | Row metadata | Float (rounded to 2 decimals) | `src/prioritizer.py:calculate_priority_score` |
+| **7. Optimization** | Solves 0/1 Knapsack via dynamic programming with capacity = `time_budget`. | Maximizes testing value without exceeding time limits. | Prioritized DataFrame + Budget | Filtered DataFrame (`selected=True`) | `src/optimizer.py:optimize_regression_suite` |
+| **8. Suite Selection** | Extracts selected test subset sorted by execution sequence. | Final set of tests designated for execution. | Selected DataFrame | Selected Test Rows | `src/optimizer.py:optimize_regression_suite` |
+| **9. Exclusion Analysis** | Filters tests not selected where `priority == "High"` and `relevance_score >= 50`. | Warns QA engineers about critical tests deferred due to budget limits. | All Tests + Selected Tests | `list[dict]` (High-risk exclusions) | `src/exclusion_analyzer.py:analyze_exclusions` |
+| **10. Coverage Analysis** | Computes module coverage rates, uncovered modules, and tag frequencies. | Reveals testing blind spots across system modules. | All Tests + Selected Tests | Coverage metrics dictionary | `src/coverage_analyzer.py:analyze_coverage` |
+| **11. Risk Debt Analysis** | Measures the percentage of relevant high-risk score unexecuted. | Translates exclusions into an actionable "Risk Debt Index". | Excluded Tests + Prioritized Tests | Risk debt metrics dictionary | `src/risk_debt_analyzer.py:calculate_risk_debt` |
+| **12. Recommendations** | Generates summary metrics (unused budget, highest covered module). | Informs user whether budget was fully utilized or has slack. | Selected Tests + Coverage + Budget | Recommendations dictionary | `src/recommender.py:generate_recommendation` |
+| **13. AI Explanations** | Prompts LLM (or mock) to generate trade-off reasoning in plain English. | Provides transparent auditability for human evaluators. | Selected + Excluded + Change + Budget | Explanations dictionary | `src/ai_explainer.py:generate_ai_explanations` |
+| **14. Backend Response** | Persists run & results to DB and returns JSON payload to client. | Records historical execution and provides API contract. | Pipeline outputs | Structured JSON response | `backend/api.py:optimize` |
+| **15. Frontend View** | Renders stat cards, test tables, coverage progress bars, and risk alerts. | Provides an interactive dashboard for the QA engineer. | JSON response | Interactive UI view | `frontend/src/pages/Dashboard.jsx` |
 
 ---
 
 ## Prioritization Algorithm
 
-The deterministic scoring algorithm assigns every candidate test case a `priority_score` between $0$ and $100$.
+The deterministic scoring algorithm assigns every candidate test case a `priority_score` between 0 and 100.
 
 ### Exact Mathematical Formula
 
-$$\text{Final Priority Score} = (\text{Relevance Score} \times 0.50) + (\text{Business Priority Score} \times 0.30) + (\text{Historical Failure Score} \times 0.20)$$
+```
+Final Priority Score = (Relevance Score × 0.50) + (Business Priority Score × 0.30) + (Historical Failure Score × 0.20)
+```
 
 #### 1. Business Priority Weights
-Confirmed in [`src/prioritizer.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/prioritizer.py#L4-L8):
+Confirmed in `src/prioritizer.py`:
 ```python
 PRIORITY_SCORES = {
     "High": 100,
@@ -279,13 +281,13 @@ PRIORITY_SCORES = {
 ```
 
 #### 2. Historical Failure Normalization
-Confirmed in [`src/prioritizer.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/prioritizer.py#L11-L20):
-$$\text{Historical Failure Score} = \begin{cases} 
-\left(\frac{\text{failure\_count}}{\text{max\_failure\_count}}\right) \times 100 & \text{if } \text{max\_failure\_count} > 0 \\ 
-0.0 & \text{otherwise} 
-\end{cases}$$
+Confirmed in `src/prioritizer.py`:
+```
+Historical Failure Score = (failure_count / max_failure_count) × 100   if max_failure_count > 0
+                          = 0.0                                        otherwise
+```
 
-#### 3. Why Duration is a Constraint, Not a Score Component
+#### 3. Why Duration Is a Constraint, Not a Score Component
 A common anti-pattern is dividing priority by duration or subtracting duration from score. In SRSO, **duration represents resource cost (knapsack weight)**, while priority score represents **value**. Treating duration as a constraint rather than a penalty prevents the system from unfairly favoring trivial 1-minute tests over comprehensive, critical 10-minute tests.
 
 ---
@@ -298,23 +300,25 @@ Regression suite selection is formally modeled as the **0/1 Knapsack Problem**, 
 
 | Knapsack Concept | Regression Optimization Equivalent |
 | :--- | :--- |
-| **Items ($i$)** | Test cases ($TC001, TC002, \dots, TC020$) |
-| **Value ($v_i$)** | Test `priority_score` (computed deterministically) |
-| **Weight / Cost ($w_i$)** | Test `duration` (in minutes) |
-| **Capacity ($W$)** | `time_budget` (available testing window in minutes) |
-| **Decision Variable ($x_i$)** | Binary: $x_i \in \{0, 1\}$ ($1$ = Selected, $0$ = Excluded) |
+| **Items (i)** | Test cases (TC001, TC002, …, TC020) |
+| **Value (v_i)** | Test `priority_score` (computed deterministically) |
+| **Weight / Cost (w_i)** | Test `duration` (in minutes) |
+| **Capacity (W)** | `time_budget` (available testing window in minutes) |
+| **Decision Variable (x_i)** | Binary: x_i ∈ {0, 1} (1 = Selected, 0 = Excluded) |
 
 ### Formal Objective
-$$\max \sum_{i=1}^{N} x_i \cdot \text{priority\_score}_i \quad \text{subject to} \quad \sum_{i=1}^{N} x_i \cdot \text{duration}_i \le \text{time\_budget}$$
+```
+max Σ x_i · priority_score_i   subject to   Σ x_i · duration_i ≤ time_budget
+```
 
 ### Implementation Details
-Implemented in [`src/optimizer.py::optimize_regression_suite`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/optimizer.py#L4-L60):
-- **Dynamic Programming Table:** Uses a 1-dimensional array `dp` of size `time_budget + 1`, where `dp[t]` holds the maximum achievable priority score for testing time $t$.
+Implemented in `src/optimizer.py::optimize_regression_suite`:
+- **Dynamic Programming Table:** Uses a 1-dimensional array `dp` of size `time_budget + 1`, where `dp[t]` holds the maximum achievable priority score for testing time `t`.
 - **Backwards Iteration:** The inner loop runs backwards from `time_budget` down to `duration`, ensuring each test case is included at most once (0/1 constraint).
 - **Index Tracking:** A parallel array `selected[t]` stores the list of test indices used to achieve `dp[t]`.
 - **Complexity:**
-  - **Time Complexity:** $\mathcal{O}(N \times B)$, where $N$ is the number of test cases (e.g., 20) and $B$ is the time budget (e.g., 30). For $N=20, B=30$, operations are under $1,000$ iterations, executing in $< 2$ milliseconds.
-  - **Space Complexity:** $\mathcal{O}(B \times N)$ to store the DP table and selected index lists.
+  - **Time Complexity:** O(N × B), where N is the number of test cases (e.g., 20) and B is the time budget (e.g., 30). For N=20, B=30, operations are under 1,000 iterations, executing in < 2 milliseconds.
+  - **Space Complexity:** O(B × N) to store the DP table and selected index lists.
 
 ---
 
@@ -324,44 +328,44 @@ The boundary between AI and deterministic logic is strictly enforced:
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│                   AI BOUNDARY                          │
-│                                                        │
-│  [Natural Language Change]                             │
-│             │                                          │
-│             ▼                                          │
-│  src/ai_matcher.py (OpenAI / Mock Heuristic)           │
-│  Output: relevance_scores {TC001: 75.0, TC002: 100.0}   │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-                           ▼
+│                   AI BOUNDARY                           │
+│                                                          │
+│  [Natural Language Change]                               │
+│             │                                            │
+│             ▼                                            │
+│  src/ai_matcher.py (OpenAI / Mock Heuristic)              │
+│  Output: relevance_scores {TC001: 75.0, TC002: 100.0}     │
+└──────────────────────────┬───────────────────────────────┘
+                            │
+                            ▼
 ┌────────────────────────────────────────────────────────┐
-│               DETERMINISTIC BOUNDARY                   │
-│                                                        │
-│  1. prioritizer.py: Score = 0.5*Rel + 0.3*Prio + 0.2*F │
-│  2. optimizer.py: 0/1 Knapsack DP (Budget Bound)       │
-│  3. coverage_analyzer.py: Module/Tag Percentages       │
-│  4. exclusion_analyzer.py: High-Risk Exclusion Logic   │
-│  5. risk_debt_analyzer.py: Risk Debt Index Calculation │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-                           ▼
+│               DETERMINISTIC BOUNDARY                    │
+│                                                          │
+│  1. prioritizer.py: Score = 0.5*Rel + 0.3*Prio + 0.2*F   │
+│  2. optimizer.py: 0/1 Knapsack DP (Budget Bound)          │
+│  3. coverage_analyzer.py: Module/Tag Percentages          │
+│  4. exclusion_analyzer.py: High-Risk Exclusion Logic       │
+│  5. risk_debt_analyzer.py: Risk Debt Index Calculation      │
+└──────────────────────────┬───────────────────────────────┘
+                            │
+                            ▼
 ┌────────────────────────────────────────────────────────┐
-│                   AI BOUNDARY                          │
-│                                                        │
-│  src/ai_explainer.py (OpenAI / Mock Heuristic)         │
-│  Input: Selected & Excluded tests + Budget             │
-│  Output: Natural language explanations of trade-offs   │
+│                   AI BOUNDARY                           │
+│                                                          │
+│  src/ai_explainer.py (OpenAI / Mock Heuristic)             │
+│  Input: Selected & Excluded tests + Budget                 │
+│  Output: Natural language explanations of trade-offs       │
 └────────────────────────────────────────────────────────┘
 ```
 
 ### Mock AI Provider Fallback
 When `AI_PROVIDER=mock` (or when OpenAI is unconfigured/offline):
-- [`src/ai_matcher.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/ai_matcher.py#L8-L50) computes relevance using word-overlap heuristics against test metadata:
-  - $\ge 3$ keyword matches $\to 100.0$
-  - $2$ keyword matches $\to 75.0$
-  - $1$ keyword match $\to 50.0$
-  - $0$ keyword matches $\to 0.0$
-- [`src/ai_explainer.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/ai_explainer.py#L8-L38) generates structured rule-based trade-off explanations.
+- `src/ai_matcher.py` computes relevance using word-overlap heuristics against test metadata:
+  - ≥3 keyword matches → 100.0
+  - 2 keyword matches → 75.0
+  - 1 keyword match → 50.0
+  - 0 keyword matches → 0.0
+- `src/ai_explainer.py` generates structured rule-based trade-off explanations.
 - This ensures 100% of the platform's functionality and tests operate seamlessly offline without external API keys.
 
 ---
@@ -376,7 +380,7 @@ When `AI_PROVIDER=mock` (or when OpenAI is unconfigured/offline):
 3. **Signature Verification:** The backend verifies the HMAC-SHA256 signature using `GITHUB_WEBHOOK_SECRET`.
 4. **Project Lookup:** Resolves the `GitProject` record matching `repo_owner`, `repo_name`, and `installation_id`.
 5. **Compare API Invocation:** The backend mints a short-lived RS256 JWT, requests an installation token, and queries GitHub's Compare API (`/repos/{owner}/{repo}/compare/{before}...{after}`).
-6. **Change Analysis:** [`src/github_change_analyzer.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/src/github_change_analyzer.py#L71-L165) extracts changed file names, patch diffs, and commit messages to deduce affected modules, features, and risk areas.
+6. **Change Analysis:** `src/github_change_analyzer.py` extracts changed file names, patch diffs, and commit messages to deduce affected modules, features, and risk areas.
 7. **Pipeline Execution:** Synthesized change summaries are fed into `run_git_impact`, which executes the optimization pipeline against the repository's uploaded test catalog and default budget.
 8. **Persistence:** Results are stored in the `git_runs` table (`status="completed"` or `"failed"`).
 9. **UI Inspection & Deletion:** Developers inspect commit changes, affected modules, selected tests, and risk debt in the Git Auto dashboard, with the ability to delete individual runs securely.
@@ -387,10 +391,10 @@ When `AI_PROVIDER=mock` (or when OpenAI is unconfigured/offline):
 
 The GitHub integration connects directly to the GitHub REST API using GitHub App credentials:
 
-- **App Authentication (`RS256`):** Handled in [`backend/github_client.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/backend/github_client.py#L11-L40). Generates an asymmetric RSA JWT signed by the App's private `.pem` key.
+- **App Authentication (RS256):** Handled in `backend/github_client.py`. Generates an asymmetric RSA JWT signed by the App's private `.pem` key.
 - **Installation Access Token:** Uses the JWT to request an ephemeral installation token via `POST https://api.github.com/app/installations/{installation_id}/access_tokens`.
 - **Compare API:** Queries `GET https://api.github.com/repos/{owner}/{repo}/compare/{before}...{after}` to obtain the list of changed files, commit count, and line diffs (`patch`).
-- **Webhook Security:** Webhook payloads are verified in [`backend/github_webhook.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/backend/github_webhook.py#L28-L52) using `hmac.compare_digest` against `sha256=<hex_digest>`.
+- **Webhook Security:** Webhook payloads are verified in `backend/github_webhook.py` using `hmac.compare_digest` against `sha256=<hex_digest>`.
 
 ---
 
@@ -490,10 +494,10 @@ erDiagram
 ```
 
 ### Cascade Deletions & Referential Integrity
-- `regression_runs.user_id` $\to$ `users.id` with `ON DELETE CASCADE`.
-- `regression_results.run_id` $\to$ `regression_runs.id` with `ON DELETE CASCADE`.
-- `git_projects.user_id` $\to$ `users.id` with `ON DELETE CASCADE`.
-- `git_runs.git_project_id` $\to$ `git_projects.id` with `ON DELETE CASCADE`.
+- `regression_runs.user_id` → `users.id` with `ON DELETE CASCADE`.
+- `regression_results.run_id` → `regression_runs.id` with `ON DELETE CASCADE`.
+- `git_projects.user_id` → `users.id` with `ON DELETE CASCADE`.
+- `git_runs.git_project_id` → `git_projects.id` with `ON DELETE CASCADE`.
 - Deleting an account or a project automatically cleans up all associated runs and results, preventing orphaned rows.
 
 ---
@@ -502,7 +506,7 @@ erDiagram
 
 - **Argon2 Password Hashing:** Uses `argon2-cffi` with salt and memory-hard parameters for user passwords and stored OTP hashes.
 - **Stateful Database Sessions:** Authentication uses a 32-byte cryptographically secure random token (`secrets.token_urlsafe(32)`). Only the SHA-256 hash of the token is persisted in `user_sessions`.
-- **HTTP-Only Cookies:** Session tokens are delivered via an HTTP-only cookie (`srso_session`, `SameSite=Lax`, 7-day expiration). Javascript cannot access the raw cookie, preventing XSS-based session theft.
+- **HTTP-Only Cookies:** Session tokens are delivered via an HTTP-only cookie (`srso_session`, `SameSite=Lax`, 7-day expiration). JavaScript cannot access the raw cookie, preventing XSS-based session theft.
 - **OTP Verification:** 6-digit random codes (`secrets.randbelow(1_000_000)`), valid for 10 minutes with a 5-attempt brute-force limit.
 - **Ownership Scoping:** All API endpoints (`/api/history/{id}`, `/api/git-impact/runs/{id}`, DELETE routes) explicitly verify that requested resources belong to the requesting user's ID.
 - **Webhook Integrity:** Inbound GitHub webhooks require valid `X-Hub-Signature-256` matching the SHA-256 HMAC of the request body.
@@ -514,9 +518,9 @@ erDiagram
 The frontend is a single-page application built with React 19, Vite, and Tailwind CSS.
 
 ### Pages and Views
-- [`Login.jsx`](file:///d:/9/Smart-Regression-Suite-Optimizer/frontend/src/pages/Login.jsx) & [`Register.jsx`](file:///d:/9/Smart-Regression-Suite-Optimizer/frontend/src/pages/Register.jsx): Email and password authentication with client-side validation.
-- [`VerifyOTP.jsx`](file:///d:/9/Smart-Regression-Suite-Optimizer/frontend/src/pages/VerifyOTP.jsx): 6-digit code entry interface with resend countdown timer.
-- [`Dashboard.jsx`](file:///d:/9/Smart-Regression-Suite-Optimizer/frontend/src/pages/Dashboard.jsx): Core optimizer interface containing:
+- **`Login.jsx`** & **`Register.jsx`**: Email and password authentication with client-side validation.
+- **`VerifyOTP.jsx`**: 6-digit code entry interface with resend countdown timer.
+- **`Dashboard.jsx`**: Core optimizer interface containing:
   - `StatsCards`: Displays total tests, selected count, execution time, and budget utilization.
   - `OptimizationForm`: File uploader, change description textarea, and budget input.
   - `SelectedTestsTable`: Detailed table of recommended tests with duration, priority badges, and scores.
@@ -524,10 +528,10 @@ The frontend is a single-page application built with React 19, Vite, and Tailwin
   - `CoverageSection`: Visual progress bars for module coverage and tag distribution pills.
   - `RegressionRiskDebt`: Risk debt index gauge, deferred execution time, and affected modules.
   - `AIReasoning`: Expandable cards explaining selection and exclusion rationales.
-- [`GitAuto.jsx`](file:///d:/9/Smart-Regression-Suite-Optimizer/frontend/src/pages/GitAuto.jsx): Repository configuration, run history, and detailed commit inspection.
-- [`History.jsx`](file:///d:/9/Smart-Regression-Suite-Optimizer/frontend/src/pages/History.jsx): Tabular listing of previous runs with modal inspection.
-- [`InputFormat.jsx`](file:///d:/9/Smart-Regression-Suite-Optimizer/frontend/src/pages/InputFormat.jsx): Live interactive documentation of required CSV columns and format rules.
-- [`Settings.jsx`](file:///d:/9/Smart-Regression-Suite-Optimizer/frontend/src/pages/Settings.jsx): User account details and configuration summaries.
+- **`GitAuto.jsx`**: Repository configuration, run history, and detailed commit inspection.
+- **`History.jsx`**: Tabular listing of previous runs with modal inspection.
+- **`InputFormat.jsx`**: Live interactive documentation of required CSV columns and format rules.
+- **`Settings.jsx`**: User account details and configuration summaries.
 
 ---
 
@@ -541,9 +545,9 @@ The test catalog must be provided as a CSV file with the following required colu
 | `module` | String | System functional module | Non-empty string |
 | `description` | String | Plain-English test scenario | Non-empty string |
 | `priority` | String | Business priority level | Must be exactly `High`, `Medium`, or `Low` |
-| `duration` | Integer | Execution duration in minutes | Must be a strictly positive integer ($> 0$) |
+| `duration` | Integer | Execution duration in minutes | Must be a strictly positive integer (> 0) |
 | `tags` | String | Comma-delimited descriptive tags | Non-empty string (e.g., `"payment,upi"`) |
-| `historical_failure_count` | Integer | Historical test failure frequency | Must be a non-negative integer ($\ge 0$) |
+| `historical_failure_count` | Integer | Historical test failure frequency | Must be a non-negative integer (≥ 0) |
 
 ### Example CSV (`data/test_cases.csv`)
 ```csv
@@ -762,18 +766,18 @@ python -m pytest -v
 ```
 
 ### Test Suite Structure (40 Passing Tests)
-- [`tests/test_data_loader.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/tests/test_data_loader.py): Verifies CSV validation, duplicate ID detection, and error handling for missing/invalid columns.
-- [`tests/test_prioritizer.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/tests/test_prioritizer.py): Validates exact formula weights ($0.50 / 0.30 / 0.20$), priority scoring values, and failure rate normalization.
-- [`tests/test_optimizer.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/tests/test_optimizer.py): Validates 0/1 knapsack compliance with budget limits, optimal subset selection, and invalid budget handling.
-- [`tests/test_coverage_analyzer.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/tests/test_coverage_analyzer.py): Tests module status assignment (`Fully Covered`, `Partially Covered`, `Not Covered`) and tag aggregation.
-- [`tests/test_exclusion_analyzer.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/tests/test_exclusion_analyzer.py): Tests high-risk exclusion criteria (`High` priority + relevance $\ge 50$).
-- [`tests/test_risk_debt_analyzer.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/tests/test_risk_debt_analyzer.py): Confirms Risk Debt Index calculations and deferred execution time sums.
-- [`tests/test_recommender.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/tests/test_recommender.py): Tests budget surplus calculation and module coverage summary strings.
-- [`tests/test_ai_matcher.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/tests/test_ai_matcher.py) & [`tests/test_ai_explainer.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/tests/test_ai_explainer.py): Tests mock AI scoring rules and explanation structures.
-- [`tests/test_github_change_analyzer.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/tests/test_github_change_analyzer.py) & [`tests/test_git_impact_service.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/tests/test_git_impact_service.py): Verifies commit message parsing and Git impact pipeline orchestration.
-- [`tests/test_api.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/tests/test_api.py): Tests FastAPI upload endpoints, validation errors, and health routes.
-- [`tests/test_run_numbering_and_cascade.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/tests/test_run_numbering_and_cascade.py): Tests per-user sequential run numbering (`Run #1`, `Run #2`) and cascade deletion of regression runs and results on user deletion.
-- [`tests/test_git_auto_fixes.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/tests/test_git_auto_fixes.py): 10 dedicated security and regression tests verifying:
+- **`tests/test_data_loader.py`**: Verifies CSV validation, duplicate ID detection, and error handling for missing/invalid columns.
+- **`tests/test_prioritizer.py`**: Validates exact formula weights (0.50 / 0.30 / 0.20), priority scoring values, and failure rate normalization.
+- **`tests/test_optimizer.py`**: Validates 0/1 knapsack compliance with budget limits, optimal subset selection, and invalid budget handling.
+- **`tests/test_coverage_analyzer.py`**: Tests module status assignment (`Fully Covered`, `Partially Covered`, `Not Covered`) and tag aggregation.
+- **`tests/test_exclusion_analyzer.py`**: Tests high-risk exclusion criteria (`High` priority + relevance ≥ 50).
+- **`tests/test_risk_debt_analyzer.py`**: Confirms Risk Debt Index calculations and deferred execution time sums.
+- **`tests/test_recommender.py`**: Tests budget surplus calculation and module coverage summary strings.
+- **`tests/test_ai_matcher.py`** & **`tests/test_ai_explainer.py`**: Tests mock AI scoring rules and explanation structures.
+- **`tests/test_github_change_analyzer.py`** & **`tests/test_git_impact_service.py`**: Verifies commit message parsing and Git impact pipeline orchestration.
+- **`tests/test_api.py`**: Tests FastAPI upload endpoints, validation errors, and health routes.
+- **`tests/test_run_numbering_and_cascade.py`**: Tests per-user sequential run numbering (`Run #1`, `Run #2`) and cascade deletion of regression runs and results on user deletion.
+- **`tests/test_git_auto_fixes.py`**: 10 dedicated security and regression tests verifying:
   - Multi-project run lookups.
   - Cross-user run access protection (404 on foreign runs).
   - Setup de-duplication (updating existing projects).
@@ -790,31 +794,31 @@ During the development and testing of SRSO, several non-trivial engineering bugs
 - **Problem:** When a new user registered and executed their first regression run, the UI displayed `Run #17` instead of `Run #1` because the database table's global primary key was being exposed.
 - **Root Cause:** The `regression_runs` table lacked a per-user sequential counter.
 - **Fix:** Added a `run_number` column to `RegressionRun`. In `backend/api.py`, the run number is computed as `(last_run.run_number + 1) if last_run else 1` scoped strictly to `user_id`.
-- **Verification:** Verified by [`tests/test_run_numbering_and_cascade.py`](file:///d:/9/Smart-Regression-Suite-Optimizer/tests/test_run_numbering_and_cascade.py).
+- **Verification:** Verified by `tests/test_run_numbering_and_cascade.py`.
 
 ### 2. Multi-Project Run Lookup 404 Bug in Git Auto
 - **Problem:** Users who configured more than one Git Auto repository received a `404 Not Found` when attempting to view runs belonging to their second repository.
 - **Root Cause:** In `backend/git_routes.py`, `get_git_run` called `db.query(GitProject).filter(GitProject.user_id == current_user.id).first()`, which retrieved only the user's *first* project. If a run belonged to the user's *second* project, the validation check rejected it.
 - **Fix:** Refactored queries to fetch all project IDs owned by the user (`projects = db.query(GitProject).filter(GitProject.user_id == current_user.id).all()`) and validated using `GitRun.git_project_id.in_(project_ids)`.
-- **Verification:** Verified in [`tests/test_git_auto_fixes.py::test_user_with_multiple_git_projects_can_open_run`](file:///d:/9/Smart-Regression-Suite-Optimizer/tests/test_git_auto_fixes.py#L31-L85).
+- **Verification:** Verified in `tests/test_git_auto_fixes.py::test_user_with_multiple_git_projects_can_open_run`.
 
 ### 3. Duplicate GitProject Records on Repository Reconfiguration
 - **Problem:** Re-submitting the Git Auto setup form for an existing repository inserted duplicate project records in MySQL, leading to ambiguous webhook routing.
 - **Root Cause:** `setup_git_project` lacked an upsert check for `(user_id, repo_owner, repo_name)`.
 - **Fix:** Added a check for existing projects. If found, existing fields (`installation_id`, `default_budget`, `catalog_path`) are updated in-place rather than inserting a new row.
-- **Verification:** Verified in [`tests/test_git_auto_fixes.py::test_setup_updates_existing_project_instead_of_duplicates`](file:///d:/9/Smart-Regression-Suite-Optimizer/tests/test_git_auto_fixes.py#L129-L193).
+- **Verification:** Verified in `tests/test_git_auto_fixes.py::test_setup_updates_existing_project_instead_of_duplicates`.
 
 ### 4. Application Crash on Legacy or Failed Git Runs with Missing Result JSON
 - **Problem:** Opening a failed Git Auto run or legacy record with `result_json = None` caused a 500 server error and crashed the frontend view.
 - **Root Cause:** Unconditional call to `json.loads(run.result_json)`.
 - **Fix:** Guarded deserialization with fallback defaults: `json.loads(run.result_json or "{}")`. Updated the frontend `GitRunDetails` component to display failure alerts gracefully.
-- **Verification:** Verified in [`tests/test_git_auto_fixes.py::test_failed_git_run_can_be_displayed_without_optimization_result`](file:///d:/9/Smart-Regression-Suite-Optimizer/tests/test_git_auto_fixes.py#L195-L235).
+- **Verification:** Verified in `tests/test_git_auto_fixes.py::test_failed_git_run_can_be_displayed_without_optimization_result`.
 
 ### 5. Git Auto Run Deletion Scoping
 - **Problem:** Deleting a Git Auto run needed to ensure that users could not delete runs belonging to other users, and that deleting a run did not cascade to delete other runs or the parent project.
 - **Root Cause:** Deletion endpoint needed strict multi-project ownership verification.
 - **Fix:** Implemented `DELETE /api/git-impact/runs/{run_id}` requiring `GitRun.git_project_id.in_(project_ids)` where `project_ids` belong to `current_user.id`.
-- **Verification:** Verified in [`tests/test_git_auto_fixes.py::test_authenticated_user_can_delete_own_run`](file:///d:/9/Smart-Regression-Suite-Optimizer/tests/test_git_auto_fixes.py#L280-L322) and `test_user_cannot_delete_another_users_run`.
+- **Verification:** Verified in `tests/test_git_auto_fixes.py::test_authenticated_user_can_delete_own_run` and `test_user_cannot_delete_another_users_run`.
 
 ---
 
@@ -825,7 +829,7 @@ During the development and testing of SRSO, several non-trivial engineering bugs
 | **Missing required CSV columns** | `400 Bad Request` | `{"detail": "Missing required columns: ['module', 'duration']"}` |
 | **Invalid priority value in CSV** | `400 Bad Request` | `{"detail": "Invalid priority values: {'Urgent'}"}` |
 | **Non-positive duration in CSV** | `400 Bad Request` | `{"detail": "Duration must be greater than zero."}` |
-| **Time budget $\le 0$** | `400 Bad Request` | `{"detail": "Time budget must be greater than 0."}` |
+| **Time budget ≤ 0** | `400 Bad Request` | `{"detail": "Time budget must be greater than 0."}` |
 | **Unauthenticated request** | `401 Unauthorized` | `{"detail": "Not authenticated."}` |
 | **Accessing another user's run** | `404 Not Found` | `{"detail": "Git Impact run not found."}` (Prevents ID enumeration) |
 | **Invalid webhook signature** | `401 Unauthorized` | `{"detail": "Invalid GitHub webhook signature."}` |
@@ -836,24 +840,23 @@ During the development and testing of SRSO, several non-trivial engineering bugs
 
 ## End-to-End Example
 
-### Scenario 
 ### Step-by-Step Flow:
 1. **Semantic Matching:**
-   - Tests tagged with `"payment"`, `"upi"`, `"checkout"` (such as `TC013`, `TC014`, `TC015`, `TC016`, `TC017`) match keywords and receive high relevance scores ($75 - 100$).
-   - Tests for unrelated modules (e.g., `TC020` Search, `TC006` Cart) receive lower relevance scores ($0 - 50$).
+   - Tests tagged with `"payment"`, `"upi"`, `"checkout"` (such as `TC013`, `TC014`, `TC015`, `TC016`, `TC017`) match keywords and receive high relevance scores (75–100).
+   - Tests for unrelated modules (e.g., `TC020` Search, `TC006` Cart) receive lower relevance scores (0–50).
 2. **Prioritization Scoring:**
    - `TC014` (Payment Failure, `High` priority = 100, 12 historical failures = maximum in catalog):
-     $$\text{Score} = (100 \times 0.50) + (100 \times 0.30) + (100 \times 0.20) = 50 + 30 + 20 = 100.0$$
+     Score = (100 × 0.50) + (100 × 0.30) + (100 × 0.20) = 50 + 30 + 20 = **100.0**
    - `TC013` (Payment Success, `High` priority = 100, 10 historical failures):
-     $$\text{Score} = (100 \times 0.50) + (100 \times 0.30) + (83.3 \times 0.20) = 50 + 30 + 16.67 = 96.67$$
+     Score = (100 × 0.50) + (100 × 0.30) + (83.3 × 0.20) = 50 + 30 + 16.67 = **96.67**
 3. **0/1 Knapsack Optimization:**
    - With a 30-minute budget, the optimizer evaluates test combinations.
    - It selects `TC014` (7 min), `TC013` (8 min), and `TC015` (15 min).
-   - Total selected duration: $7 + 8 + 15 = 30\text{ minutes}$ (100% budget utilization).
+   - Total selected duration: 7 + 8 + 15 = 30 minutes (100% budget utilization).
 4. **Exclusion & Risk Debt Analysis:**
    - `TC017` (Payment Refund, duration = 14 min, `High` priority, relevance = 75) could not fit without exceeding the 30-minute budget.
    - Identified as an **Excluded High-Risk Test**.
-   - **Risk Debt Index:** $\approx 21.4\%$, with 14 minutes of deferred high-risk execution time flagged to the engineer.
+   - **Risk Debt Index:** ≈21.4%, with 14 minutes of deferred high-risk execution time flagged to the engineer.
 5. **Coverage:**
    - Module `Payment` is marked as **Partially Covered** (60%).
    - Modules `Authentication`, `Cart`, `Orders`, and `Search` are flagged as **Uncovered Modules**.
@@ -879,7 +882,7 @@ During the development and testing of SRSO, several non-trivial engineering bugs
 
 - **Bounded Test Catalog:** The system is currently optimized and tested for test catalogs containing up to hundreds of tests. Enterprise suites with tens of thousands of tests would require heuristic knapsack approximations (e.g., FPTAS or genetic algorithms).
 - **Static Test Durations:** Execution durations are loaded from historical averages in the CSV catalog rather than real-time dynamic measurement.
-- **Mock AI vs. Live LLM:** The offline mock AI provider uses keyword matching, which does not detect deep synonyms (e.g., "remittance" $\leftrightarrow$ "payment") without switching to `AI_PROVIDER=openai`.
+- **Mock AI vs. Live LLM:** The offline mock AI provider uses keyword matching, which does not detect deep synonyms (e.g., "remittance" ↔ "payment") without switching to `AI_PROVIDER=openai`.
 - **Single Active Git Project per View:** While the backend fully supports multiple Git projects per user, the setup UI currently focuses on managing one primary repository at a time.
 
 ---
@@ -905,4 +908,3 @@ Make sure all 40 automated tests pass before submitting a pull request:
 ```bash
 python -m pytest
 ```
-
