@@ -68,10 +68,17 @@ In practical software engineering:
 - **Git Auto Run Details & Deletion:** Dedicated UI for inspecting commit metadata, changed file patches, module impacts, and deleting specific Git Auto runs with strict user ownership enforcement.
 
 ---
+<<<<<<< HEAD
 ### Standard Pipeline Flow
+=======
 
+## System Architecture
+>>>>>>> 512a7b6 (docs: update project README)
+
+### Standard Pipeline Flow
 ```mermaid
 flowchart TD
+<<<<<<< HEAD
     User([QA Engineer / Developer]) -->|CSV + Change Description + Budget| Frontend["React 19 + Vite Frontend"]
     Frontend -->|POST /api/optimize + Session Cookie| Backend["FastAPI Backend"]
 
@@ -91,34 +98,74 @@ flowchart TD
         AIMatcher --> Prioritizer
         Prioritizer --> Optimizer
 
+=======
+    User(["QA Engineer / Developer"]) -->|Uploads CSV, Budget, Change Desc| Frontend["React 19 + Vite Frontend"]
+    Frontend -->|POST /api/optimize + Session Cookie| Backend["FastAPI Backend"]
+
+    subgraph CorePipeline["Core Pipeline: src/pipeline.py"]
+        DataLoader["data_loader.py: CSV Validation"]
+        AIMatcher["ai_matcher.py: Semantic Relevance Matching"]
+        Prioritizer["prioritizer.py: Deterministic Scoring Formula"]
+        Optimizer["optimizer.py: 0-1 Knapsack DP"]
+        Exclusion["exclusion_analyzer.py: High-Risk Exclusion"]
+        Coverage["coverage_analyzer.py: Module and Tag Coverage"]
+        RiskDebt["risk_debt_analyzer.py: Risk Debt Index"]
+        AIExplainer["ai_explainer.py: AI Trade-Off Reasoning"]
+
+        DataLoader --> AIMatcher
+        AIMatcher --> Prioritizer
+        Prioritizer --> Optimizer
+>>>>>>> 512a7b6 (docs: update project README)
         Optimizer --> Exclusion
         Optimizer --> Coverage
         Optimizer --> RiskDebt
         Optimizer --> AIExplainer
     end
 
+<<<<<<< HEAD
     Backend --> PipelineEntry
     PipelineEntry --> DB[("MySQL Database: Runs & Results")]
     PipelineEntry --> Frontend
 ```### Git Auto Workflow
+=======
+    Backend --> DataLoader
+    Exclusion --> DB[("MySQL Database: Runs and Results")]
+    Coverage --> DB
+    RiskDebt --> DB
+    AIExplainer --> DB
+    DB --> Frontend
+    Frontend --> User
+```
+
+### Git Auto Workflow
+>>>>>>> 512a7b6 (docs: update project README)
 ```mermaid
 flowchart TD
-    Dev([Developer]) -->|git push| GitHub[GitHub Repository]
-    GitHub -->|Push Webhook + HMAC-SHA256| WebhookHandler[backend/github_webhook.py]
-    
-    subgraph Git Auto Processing
-        WebhookHandler --> SigCheck{Verify HMAC Signature}
-        SigCheck -->|Invalid| Reject[401 Unauthorized]
-        SigCheck -->|Valid| GHClient[backend/github_client.py]
-        GHClient -->|Generate RS256 JWT| GitHubApp[GitHub App Authentication]
-        GitHubApp -->|Installation Access Token| CompareAPI[GitHub Compare API]
-        CompareAPI -->|Changed Files & Diffs| ChangeAnalyzer[src/github_change_analyzer.py]
-        ChangeAnalyzer -->|Synthesized Change Description| GitImpact[src/git_impact_service.py]
-        GitImpact --> CorePipeline[src/pipeline.py]
+    Dev(["Developer"]) -->|git push| GitHub["GitHub Repository"]
+    GitHub -->|Push Webhook plus HMAC-SHA256| WebhookHandler["backend/github_webhook.py"]
+
+    subgraph GitAutoProcessing["Git Auto Processing"]
+        SigCheck{"Verify HMAC Signature"}
+        Reject["401 Unauthorized"]
+        GHClient["backend/github_client.py"]
+        GitHubApp["GitHub App Authentication"]
+        CompareAPI["GitHub Compare API"]
+        ChangeAnalyzer["src/github_change_analyzer.py"]
+        GitImpact["src/git_impact_service.py"]
+        CorePipelineRef["src/pipeline.py"]
+
+        SigCheck -->|Invalid| Reject
+        SigCheck -->|Valid| GHClient
+        GHClient -->|Generate RS256 JWT| GitHubApp
+        GitHubApp -->|Installation Access Token| CompareAPI
+        CompareAPI -->|Changed Files and Diffs| ChangeAnalyzer
+        ChangeAnalyzer -->|Synthesized Change Description| GitImpact
+        GitImpact --> CorePipelineRef
     end
-    
-    CorePipeline --> GitDB[(MySQL: git_projects & git_runs)]
-    GitDB --> GitAutoUI[Frontend Git Auto Dashboard]
+
+    WebhookHandler --> SigCheck
+    CorePipelineRef --> GitDB[("MySQL: git_projects and git_runs")]
+    GitDB --> GitAutoUI["Frontend Git Auto Dashboard"]
 ```
 
 ---
