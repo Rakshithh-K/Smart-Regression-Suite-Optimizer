@@ -11,8 +11,10 @@ import {
   ChevronDown,
   ChevronRight,
   AlertTriangle,
+  Download,
 } from "lucide-react";
 import { formatDateTime } from "../../utils/date";
+import { downloadSelectedTestsExcel } from "../../utils/excelExport";
 
 function GitRunDetails({ runData, onBack }) {
   const [copiedSha, setCopiedSha] = useState(false);
@@ -61,6 +63,16 @@ function GitRunDetails({ runData, onBack }) {
   const recommendation = result?.recommendation || {};
   const aiExplanations = result?.ai_explanations || {};
   const riskDebt = result?.risk_debt || {};
+
+  const handleDownloadSuite = () => {
+    if (!selectedTests || selectedTests.length === 0) return;
+    const identifier = shortSha !== "—" ? `${branch || "run"}_${shortSha}` : (id || "git_run");
+    downloadSelectedTestsExcel(selectedTests, {
+      filename: `selected_tests_${identifier}.xlsx`,
+      aiExplanations,
+      runIdentifier: id,
+    });
+  };
 
   // Budget calculations
   const totalBudget = recommendation?.time_budget ?? budget ?? 0;
@@ -1002,8 +1014,35 @@ function GitRunDetails({ runData, onBack }) {
           </div>
         </div>
       )}
+
+      {/* Bottom Action: Download Selected Test Suite */}
+      {!isFailed && (
+        <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-7 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+          <div>
+            <h3 className="text-base sm:text-lg font-bold text-slate-900">
+              Selected Regression Test Suite
+            </h3>
+            <p className="text-sm text-slate-500 mt-1 font-normal">
+              {selectedTests.length > 0
+                ? `Export all ${selectedTests.length} selected regression tests for commit ${shortSha} into an Excel spreadsheet (.xlsx).`
+                : "No tests selected within the current execution budget."}
+            </p>
+          </div>
+          <button
+            type="button"
+            id="git-download-selected-tests-btn"
+            onClick={handleDownloadSuite}
+            disabled={selectedTests.length === 0}
+            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-xs cursor-pointer shrink-0"
+          >
+            <Download size={17} />
+            <span>Download Selected Test Suite</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
 export default GitRunDetails;
+

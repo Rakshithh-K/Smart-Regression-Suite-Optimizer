@@ -5,9 +5,12 @@ import {
   ArrowLeft,
   ChevronRight,
   FileClock,
+  Download,
 } from "lucide-react";
 import axios from "axios";
 import { formatDateTime } from "../utils/date";
+import { downloadSelectedTestsExcel } from "../utils/excelExport";
+
 
 const API_BASE_URL = import.meta.env.VITE_API_URL||"http://localhost:8000";
 
@@ -60,6 +63,18 @@ function History() {
   };
 
   const closeDetails = () => setSelectedRun(null);
+
+  const handleDownloadSuite = () => {
+    if (!selectedRun?.selected_tests || selectedRun.selected_tests.length === 0) return;
+    const run = selectedRun.run;
+    const runNum = run?.run_number || run?.id || "history";
+    downloadSelectedTestsExcel(selectedRun.selected_tests, {
+      filename: `selected_regression_suite_run_${runNum}.xlsx`,
+      aiExplanations: selectedRun.ai_explanations || {},
+      runIdentifier: runNum,
+    });
+  };
+
 
   // Detail view
   if (selectedRun && !detailLoading) {
@@ -140,13 +155,25 @@ function History() {
 
         {/* Selected Tests Table */}
         <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-7 space-y-4 shadow-xs">
-          <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
-            <h2 className="text-lg font-semibold text-slate-900">
-              Selected Tests in Run #{run.run_number ?? run.id}
-            </h2>
-            <span className="text-sm font-mono text-slate-500">
-              {tests.length} tests
-            </span>
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">
+                Selected Tests in Run #{run.run_number ?? run.id}
+              </h2>
+              <span className="text-sm font-mono text-slate-500">
+                {tests.length} tests selected
+              </span>
+            </div>
+            <button
+              type="button"
+              id="history-header-download-btn"
+              onClick={handleDownloadSuite}
+              disabled={tests.length === 0}
+              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-xs cursor-pointer"
+            >
+              <Download size={16} />
+              <span>Download Selected Test Suite</span>
+            </button>
           </div>
 
           <div className="overflow-x-auto">
@@ -156,6 +183,7 @@ function History() {
                   <th className="py-3 px-4 font-semibold">Test ID</th>
                   <th className="py-3 px-4 font-semibold">Description</th>
                   <th className="py-3 px-4 font-semibold">Module</th>
+                  <th className="py-3 px-4 font-semibold">Priority</th>
                   <th className="py-3 px-4 font-semibold text-right">Runtime</th>
                   <th className="py-3 px-4 font-semibold text-right">Relevance</th>
                   <th className="py-3 px-4 font-semibold text-right">Score</th>
@@ -175,6 +203,9 @@ function History() {
                         {test.module}
                       </span>
                     </td>
+                    <td className="py-3.5 px-4">
+                      <PriorityBadge priority={test.priority} />
+                    </td>
                     <td className="py-3.5 px-4 text-right font-mono text-slate-700 text-sm">
                       {test.duration}m
                     </td>
@@ -187,12 +218,38 @@ function History() {
                   </tr>
                 ))}
               </tbody>
+
             </table>
           </div>
+        </div>
+
+        {/* Bottom Action: Download Selected Test Suite */}
+        <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-7 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+          <div>
+            <h3 className="text-base sm:text-lg font-semibold text-slate-900">
+              Selected Regression Test Suite
+            </h3>
+            <p className="text-sm text-slate-500 mt-1 font-normal">
+              {tests.length > 0
+                ? `Export all ${tests.length} selected tests for Run #${run.run_number ?? run.id} into an Excel spreadsheet (.xlsx).`
+                : "No tests recorded in this run."}
+            </p>
+          </div>
+          <button
+            type="button"
+            id="history-download-selected-tests-btn"
+            onClick={handleDownloadSuite}
+            disabled={tests.length === 0}
+            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-xs cursor-pointer shrink-0"
+          >
+            <Download size={17} />
+            <span>Download Selected Test Suite</span>
+          </button>
         </div>
       </div>
     );
   }
+
 
   // List view
   return (
@@ -329,6 +386,24 @@ function History() {
         </div>
       )}
     </div>
+  );
+}
+
+function PriorityBadge({ priority }) {
+  const styles = {
+    High: "text-rose-700 bg-rose-50 border-rose-200",
+    Medium: "text-amber-700 bg-amber-50 border-amber-200",
+    Low: "text-slate-600 bg-slate-100 border-slate-200",
+  };
+
+  return (
+    <span
+      className={`rounded px-2 py-0.5 text-xs font-semibold uppercase tracking-wider border ${
+        styles[priority] || styles.Medium
+      }`}
+    >
+      {priority || "Medium"}
+    </span>
   );
 }
 

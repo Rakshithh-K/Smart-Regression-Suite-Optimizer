@@ -194,10 +194,16 @@ class RegressionRun(Base):
         nullable=False,
     )
     run_number: Mapped[int] = mapped_column(
-    Integer,
-    nullable=False,
-    default=1,
-)
+        Integer,
+        nullable=False,
+        default=1,
+    )
+
+    result_json: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
 
 class RegressionResult(Base):
     __tablename__ = "regression_results"
@@ -239,3 +245,24 @@ class RegressionResult(Base):
         Float,
         nullable=False,
     )
+
+    priority: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+
+    description: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    tags: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+    historical_failure_count: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        default=0,
+    )

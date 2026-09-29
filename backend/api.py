@@ -15,6 +15,8 @@ from . import git_models
 from .git_routes import router as git_router
 import tempfile
 import os
+import json
+import pandas as pd
 
 from src.pipeline import run_pipeline
 
@@ -52,6 +54,13 @@ app = FastAPI(
 # ============================================================
 
 Base.metadata.create_all(bind=engine)
+
+try:
+    from backend.migrate_result_details import run_migration
+    run_migration()
+except Exception:
+    pass
+
 
 
 # ============================================================
@@ -197,6 +206,16 @@ async def optimize(
 
         user_run_number = (last_run[0] + 1) if last_run else 1
 
+        run_payload = {
+            "summary": summary,
+            "selected_tests": selected_tests.to_dict(orient="records"),
+            "excluded_high_risk_tests": exclusions,
+            "coverage": coverage,
+            "recommendation": recommendation,
+            "ai_explanations": ai_explanations,
+            "risk_debt": risk_debt,
+        }
+
         run = RegressionRun(
             user_id=user.id,
             run_number=user_run_number,
@@ -205,6 +224,7 @@ async def optimize(
             total_tests=total_tests,
             selected_tests=selected_count,
             execution_time=execution_time,
+            result_json=json.dumps(run_payload),
         )
 
         db.add(run)
@@ -218,6 +238,10 @@ async def optimize(
         # ----------------------------------------------------
 
         for _, test in selected_tests.iterrows():
+            desc_val = str(test["description"]) if "description" in test and pd.notna(test["description"]) else f"Regression test {test['test_id']}"
+            prio_val = str(test["priority"]) if "priority" in test and pd.notna(test["priority"]) else "Medium"
+            tags_val = str(test["tags"]) if "tags" in test and pd.notna(test["tags"]) else ""
+            hfc_val = int(test["historical_failure_count"]) if "historical_failure_count" in test and pd.notna(test["historical_failure_count"]) else 0
 
             result = RegressionResult(
                 run_id=run.id,
@@ -230,12 +254,17 @@ async def optimize(
                 relevance_score=float(
                     test["relevance_score"]
                 ),
+                priority=prio_val,
+                description=desc_val,
+                tags=tags_val,
+                historical_failure_count=hfc_val,
             )
 
             db.add(result)
 
         # Save selected test records
         db.commit()
+
 
         # ----------------------------------------------------
         # Return optimization result

@@ -35,3 +35,6 @@ export function downloadExcelTemplate() {
 
   XLSX.writeFile(workbook, "regression_test_catalog_template.xlsx");
 }
+
+export { downloadSelectedTestsExcel } from "./excelExport";
+

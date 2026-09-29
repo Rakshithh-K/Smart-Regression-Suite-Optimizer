@@ -98,6 +98,15 @@ def get_history_detail(
     # Get selected tests
     # --------------------------------------------------------
 
+    import json
+
+    result_data = {}
+    if getattr(run, "result_json", None):
+        try:
+            result_data = json.loads(run.result_json)
+        except Exception:
+            result_data = {}
+
     results = (
         db.query(RegressionResult)
         .filter(
@@ -105,6 +114,24 @@ def get_history_detail(
         )
         .all()
     )
+
+    if result_data.get("selected_tests"):
+        selected_tests_list = result_data["selected_tests"]
+    else:
+        selected_tests_list = [
+            {
+                "test_id": result.test_id,
+                "module": result.module,
+                "description": getattr(result, "description", None) or f"Regression test {result.test_id}",
+                "priority": getattr(result, "priority", None) or ("High" if result.priority_score >= 70 else "Medium" if result.priority_score >= 40 else "Low"),
+                "duration": result.duration,
+                "tags": getattr(result, "tags", None) or "",
+                "historical_failure_count": getattr(result, "historical_failure_count", 0) or 0,
+                "priority_score": result.priority_score,
+                "relevance_score": result.relevance_score,
+            }
+            for result in results
+        ]
 
     return {
         "run": {
@@ -118,14 +145,9 @@ def get_history_detail(
             "created_at": run.created_at.isoformat(),
         },
 
-        "selected_tests": [
-            {
-                "test_id": result.test_id,
-                "module": result.module,
-                "duration": result.duration,
-                "priority_score": result.priority_score,
-                "relevance_score": result.relevance_score,
-            }
-            for result in results
-        ],
-    }
+        "selected_tests": selected_tests_list,
+        "ai_explanations": result_data.get("ai_explanations", {}),
+        "summary": result_data.get("summary", {}),
+        "coverage": result_data.get("coverage", {}),
+        "risk_debt": result_data.get("risk_debt", {}),
+    }
