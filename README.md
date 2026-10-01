@@ -1146,7 +1146,4 @@ Tests that do not fit the budget are not silently discarded. High-risk exclusion
 AI handles language understanding and explanation. Deterministic code handles constraints and optimization.
 
 ---
-
-## License
-
-This project is currently maintained as an engineering/hackathon project. Add a project-specific license here before distributing the repository publicly under a formal open-source license.
+ 
