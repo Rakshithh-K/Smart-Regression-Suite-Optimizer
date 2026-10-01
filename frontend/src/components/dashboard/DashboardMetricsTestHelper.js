@@ -8,6 +8,6 @@ export const dashboardRegressionScenario = {
         "total regression runs",
         "completed regression runs",
         "failed regression runs",
-         
+        "average execution time",
     ],
 };
