@@ -72,16 +72,7 @@ The result is not simply a list of the highest-scoring individual tests. The sys
 SRSO is designed to:
 
 - validate uploaded regression-test catalogs,
-- understand a plain-English change description,
-- calculate relevance for each test,
-- combine relevance, business priority, and historical failure information,
-- select a high-value subset within a strict time budget,
-- identify high-risk tests that were excluded,
-- calculate module and tag coverage,
-- calculate a Risk Debt Index for deferred high-risk testing,
-- explain selection trade-offs,
-- maintain user-scoped optimization history,
-- and automatically trigger the same pipeline from GitHub pushes through **Git Auto**.
+ from GitHub pushes through **Git Auto**.
 
 ---
 
